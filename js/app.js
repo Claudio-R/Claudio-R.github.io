@@ -21,7 +21,8 @@
  *
  */
 
-import {DOMUtils, FileUtils, GoogleAuth, igvxhr, makeDraggable} from '../node_modules/igv-utils/src/index.js'
+// import {DOMUtils, FileUtils, GoogleAuth, igvxhr, makeDraggable} from '../node_modules/igv-utils/src/index.js'
+import {DOMUtils, FileUtils, GoogleAuth, igvxhr, makeDraggable} from './igv-utils/src/index.js'
 import {
     AlertSingleton,
     createSessionWidgets,
@@ -33,7 +34,8 @@ import {
     googleDriveButtonImageBase64,
     googleDriveDropdownItem,
     updateTrackMenus
-} from '../node_modules/igv-widgets/dist/igv-widgets.js'
+// } from '../node_modules/igv-widgets/dist/igv-widgets.js'
+} from '.igv-widgets.js'
 import Globals from "./globals.js"
 import {createGenomeWidgets, initializeGenomeWidgets, loadGenome} from './genomeWidgets.js'
 import {createShareWidgets, shareWidgetConfigurator} from './shareWidgets.js'
