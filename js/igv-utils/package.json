@@ -1,0 +1,34 @@
+{
+  "name": "igv-utils",
+  "version": "1.3.12",
+  "description": "Misc code shared by igvteam projects",
+  "module": "src/index.js",
+  "files": [
+    "src/**"
+  ],
+  "scripts": {
+    "test": "mocha -u tdd -r esm"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igvteam/igv-utils.git"
+  },
+  "keywords": [
+    "igv"
+  ],
+  "author": "Jim Robinson <jrobinso@ucsd.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/igvteam/igv-utils/issues"
+  },
+  "homepage": "https://github.com/igvteam/utils#readme",
+  "devDependencies": {
+    "atob": "^2.1.2",
+    "btoa": "^1.2.1",
+    "chai": "^4.2.0",
+    "esm": "^3.2.25",
+    "mocha": "^8.1.3",
+    "w3c-xmlhttprequest": "^3.0.0",
+    "xmldom": "^0.5.0"
+  }
+}
