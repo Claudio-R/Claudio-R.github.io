@@ -35,7 +35,7 @@ import {
     googleDriveDropdownItem,
     updateTrackMenus
 // } from '../node_modules/igv-widgets/dist/igv-widgets.js'
-} from '.igv-widgets.js'
+} from './igv-widgets.js'
 import Globals from "./globals.js"
 import {createGenomeWidgets, initializeGenomeWidgets, loadGenome} from './genomeWidgets.js'
 import {createShareWidgets, shareWidgetConfigurator} from './shareWidgets.js'
@@ -114,8 +114,8 @@ async function main(container, config) {
 
     //EDITED: Add the browser to the window variables
     window.browser = browser
-    //EDITED: Create a Sonification Object
-    Globals.sonifier = new Sonification(browser, config)
+
+    Globals.sonifier = new Sonification(browser)
 
     if (browser) {
         Globals.browser = browser

@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-import {AlertSingleton, createURLModal,EventBus,FileLoadManager,FileLoadWidget,Utils} from '../node_modules/igv-widgets/dist/igv-widgets.js'
+import {AlertSingleton, createURLModal,EventBus,FileLoadManager,FileLoadWidget,Utils} from './igv-widgets.js'
 import Globals from "./globals.js";
 
 let fileLoadWidget;

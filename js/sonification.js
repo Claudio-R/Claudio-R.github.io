@@ -1,52 +1,39 @@
 import RawDataSonification from './audioProcessors/RawDataSonification.js';
+import mySonifications from './resources/mySonifications.js';
+import epigenomes from './resources/epigenomes.js';
 
 export class Sonification {
 
-    constructor(browser, config) {
+    constructor(browser) {
+
         this.browser = browser
-
-        this.epigenomes_url = config.epigenomes
-        this.available_sonifications_url = config.available_sonifications
-
         this.chr = this.browser.referenceFrameList[0]['chr']
         
-        this.getSignals(this.epigenomes_url, this.chr).then(() => {
-            this.loadTracks().then(() => {
-                this.getAvailableSonifications(this.available_sonifications_url).then(() => {
-                    this.createView()
-                })
-            })
-        })
+        for(let epigenome of epigenomes) {
+            if(epigenome["chr"] === this.chr) {
+                this.signals = epigenome["histones"]
+                break;
+            }
+        }
+
+        for(let sonification of mySonifications) {
+            if(sonification["chr"] === this.chr) {
+                this.sonifications = sonification["sonifications"]
+                break;
+            }
+        }
+
+        this.createView()
+
+        // this.loadTracks().then(() => {
+        //     console.log("Tracks loaded")
+        // })
+        
+        console.log(this.signals)
+        console.log(this.sonifications)
 
         this.cache = {}
 
-    }
-
-    /** Collect binary epigenomic data from epigenome.json */
-    async getSignals(epigenomes_url) {
-        if (undefined === epigenomes_url) {
-            return undefined
-        }
-        if (Array.isArray(epigenomes_url)) {
-            return epigenomes_url
-        } else {
-            let response = undefined
-            let data = undefined
-            try {
-                response = await fetch(epigenomes_url)
-                data = await response.json()
-                for (let obj of data) {
-                    if (obj['chr'] === this.chr) {
-                        this.signals = obj["histones"]
-                        break
-                    } else {
-                        this.signals = undefined
-                    }
-                }
-            } catch (e) {
-                console.log("Error in loading epigenomes")
-            }
-        }
     }
 
     /** Load tracks with respect to the selected chromosome */
@@ -55,6 +42,7 @@ export class Sonification {
             var colors = ["#ee3333", "#33ee33", "#3333ee", "#eeee33", "#33eeee", "#ee33ee"];
             for(var i = 0; i < this.signals.length; i++) {
                 var signal = this.signals[i]
+                console.log(signal["url_track"])
                 this.browser.loadTrack({
                     url: signal["url_track"],
                     name: signal["name"],
@@ -65,33 +53,6 @@ export class Sonification {
             }
             resolve()
         })
-    }
-        
-    /** Query what sonifications are available for each chromosome from available_sonifications.json*/
-    async getAvailableSonifications(sonifications) {
-        if (undefined === sonifications) {
-            return undefined
-        }
-        if (Array.isArray(sonifications)) {
-            return sonifications
-        } else {
-            let response = undefined
-            let data = undefined
-            try {
-                response = await fetch(sonifications)
-                data = await response.json()
-                for (let obj of data) {
-                    if (obj['chr'] === this.chr) {
-                        this.available_sonifications = obj["sonifications"]
-                        break
-                    } else {
-                        this.available_sonifications = undefined
-                    }
-                }
-            } catch (e) {
-                console.log("Error in loading available sonifications")
-            }
-        }
     }
 
     createView() {
@@ -142,7 +103,7 @@ export class Sonification {
         bottomContainer.appendChild(leftContainer);
         bottomContainer.appendChild(rightContainer);
 
-        for(let sonification of this.available_sonifications) {
+        for(let sonification of this.sonifications) {
 
             var type = sonification["type"]
             var formatted_name = sonification["formatted_name"];
@@ -380,7 +341,7 @@ export class Sonification {
         new Promise(resolve => setTimeout(resolve, delay)).then(() => {
             this.chr = this.browser.referenceFrameList[0]['chr']
             this.getSignals(this.epigenomes_url, this.chr).then(() => {
-                this.getAvailableSonifications(this.available_sonifications_url).then(() => {
+                this.getAvailableSonifications(this.sonifications_url).then(() => {
                     this.updateView()
                 })
             })

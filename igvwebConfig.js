@@ -1,11 +1,6 @@
 var igvwebConfig = {
 
     genomes: "resources/genomes.json",
-    
-    //EDITED: SONIFICATION CONFIGURATION
-    epigenomes: "data/epigenome.json",
-    available_sonifications: "data/available_sonifications.json",
-    ////////
 
     trackRegistryFile: "resources/tracks/trackRegistry.json",
     sessionRegistryFile: "resources/sessions/sessionRegistry.json",

@@ -56,7 +56,7 @@ class RawDataSonification {
 
             for(var i = 0; i < numChannels; i++) {
                 var oscillator = offlineCtx.createOscillator();
-                var frequency = parameters.Frequency * (i + 1) + Math.random() * parameters.Detune * parameters.Frequency
+                var frequency = Math.floor(parameters.Frequency * (i + 1) + Math.random() * parameters.Detune * parameters.Frequency)
                 oscillator.frequency.value = frequency;
                 
                 this.outputWindow.innerHTML += "<br/>Grain " + i + ": FREQUENCY: " + frequency;
