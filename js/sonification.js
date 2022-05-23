@@ -25,9 +25,9 @@ export class Sonification {
 
         this.createView()
 
-        // this.loadTracks().then(() => {
-        //     console.log("Tracks loaded")
-        // })
+        this.loadTracks().then(() => {
+            console.log("Tracks loaded")
+        })
         
         console.log(this.signals)
         console.log(this.sonifications)
