@@ -6,34 +6,24 @@ class RawDataSonification {
      * @param {*} parameters 
      */
     constructor(multiChannelInputBuffer, parameters) {
+
+        this.state = "idle";
+
+        this.parameters = parameters;
+        this.numChannels = multiChannelInputBuffer.numberOfChannels;
         
         this.outputWindow = document.querySelector('.output-window-content');
         this.outputWindow.innerHTML = "RAW DATA SONIFICATION<br/>";
-        
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        // THE FOLLOWING ARE ALL ASYNCHRONOUS OPERATIONS IN ORDER NOT TO BLOCKE THE UI
-        const numChannels = multiChannelInputBuffer.numberOfChannels;
-
-        // 1. SYNTHETIZE THE GRAINS (CREATE OSCILLATORS AND ENV NODES) !NO DETUNE FOR NOW!
         this.outputWindow.innerHTML += "Generating Grains...";
-        this.createGrains(numChannels, parameters).then((config) => {
-        
-            // 2. RENDER THE GRAINS ON A SINGLE CHANNEL BUFFER
-            this.renderGrains(config).then((renderedBuffer) => {         
-                
-                // 3. SPLIT THE GRAINS INTO MULTI CHANNEL BUFFERS
-                //this.outputWindow.innerHTML += "<br/>Collecting signals...";
-                this.getMultiChannelGrainBuffer(renderedBuffer, numChannels, parameters).then((multiChannelGrainBuffer) => {
-                    this.multiChannelGrainBuffer = multiChannelGrainBuffer;
 
-                    // 4. PROCESS THE FINAL SONIFICATION
-                    // this.outputWindow.innerHTML += "<br/>Final processing has started...";
+        this.createGrains().then((config) => {
+            this.renderGrains(config).then((singleChannelGrainBuffer) => {         
+                this.getMultiChannelGrainBuffer(singleChannelGrainBuffer).then((multiChannelGrainBuffer) => {
+                    this.multiChannelGrainBuffer = multiChannelGrainBuffer;
                     this.process(multiChannelInputBuffer).then((multiChannelOutputBuffer) => {
                         console.log(multiChannelOutputBuffer);
-    
-                        this.play(multiChannelOutputBuffer);
                         this.sonifiedSignals = multiChannelOutputBuffer;
+                        this.play();
                     });
                 });
             });
@@ -46,34 +36,28 @@ class RawDataSonification {
      * @param {*} parameters 
      * @returns 
      */
-    createGrains(numChannels, parameters) {
+    createGrains() {
         return new Promise((resolve) => {
 
-            var offlineCtx = new OfflineAudioContext(1, numChannels * parameters.Duration * 44100, 44100);
+            var offlineCtx = new OfflineAudioContext(1, this.numChannels * this.parameters.Duration * 48000, 48000);
 
             var oscillators = [];
             var envNodes = []
 
-            for(var i = 0; i < numChannels; i++) {
-                var oscillator = offlineCtx.createOscillator();
-                var frequency = Math.floor(parameters.Frequency * (i + 1) + Math.random() * parameters.Detune * parameters.Frequency)
+            for(var i = 0; i < this.numChannels; i++) {
+                let oscillator = offlineCtx.createOscillator();
+                let frequency = Math.floor(this.parameters.Frequency * (i + 1) + Math.random() * this.parameters.Detune * this.parameters.Frequency)
                 oscillator.frequency.value = frequency;
                 
                 this.outputWindow.innerHTML += "<br/>Grain " + i + ": FREQUENCY: " + frequency;
                 
                 oscillator.type = 'sine';
 
-                var gainNode = offlineCtx.createGain();
-                var normalizationFactor = Math.pow(10, -3)
-                gainNode.gain.value = parameters.Gain * normalizationFactor;
-
-                var envNode = offlineCtx.createGain();
+                let envNode = offlineCtx.createGain();
                 envNode.gain.value = 0;
-                                
-                oscillator.connect(gainNode);
-                gainNode.connect(envNode);
+                oscillator.connect(envNode);
                 envNode.connect(offlineCtx.destination);
-                
+            
                 oscillators.push(oscillator);
                 envNodes.push(envNode);
             }
@@ -82,11 +66,27 @@ class RawDataSonification {
                 "offlineCtx": offlineCtx,
                 "oscillators": oscillators,
                 "envNodes": envNodes,
-                "parameters": parameters
             };
 
             return resolve(config);
         });
+    }
+
+    createPanningArray(num_channels) {
+        switch(num_channels) {
+            case 1:
+                return [0];
+            case 2:
+                return [-1, 1];
+            case 3:
+                return [-1, 0, 1];
+            case 4:
+                return [-1, -0.5, 0.5, 1];
+            case 5:
+                return [-1, -0.5, 0, 0.5, 1];
+            case 6:
+                return [-1, -0.5, -0.25, 0.25, 0.5, 1];
+        }
     }
 
     /**
@@ -99,7 +99,7 @@ class RawDataSonification {
             
             const offlineCtx = config.offlineCtx;
             var startTime = Number(offlineCtx.currentTime);
-            var duration = config.parameters.Duration;
+            var duration = this.parameters.Duration;
 
             function waitForGrain(grainIndex) {
                 return new Promise((resolve, reject) => {
@@ -107,39 +107,38 @@ class RawDataSonification {
                         var start = startTime + (grainIndex * duration);
                         var end = start + duration;
                         config.oscillators[grainIndex].start(start);
-                        config.envNodes[grainIndex].gain.setValueAtTime(1, start + 0.01);
-                        config.envNodes[grainIndex].gain.setValueCurveAtTime(new Float32Array([1, 0.5, 0]), start + 0.1, duration);
+                        config.envNodes[grainIndex].gain.setValueCurveAtTime(new Float32Array([0, 1, 0.5, 0]), start, duration);
                         config.oscillators[grainIndex].stop(end);                        
                         resolve(waitForGrain(grainIndex + 1));
                     } else {
-                        offlineCtx.startRendering().then((renderedBuffer) => {
-                            resolve(renderedBuffer);
+                        offlineCtx.startRendering().then((singleChannelGrainBuffer) => {
+                            resolve(singleChannelGrainBuffer);
                         });
                     }
                 });
             }
 
-            waitForGrain(0).then((renderedBuffer) => {
-                resolve(renderedBuffer);
+            waitForGrain(0).then((singleChannelGrainBuffer) => {
+                resolve(singleChannelGrainBuffer);
             });
         });
     }
 
     /**
      * Split the rendered array into a multiChannelBuffer
-     * @param {*} renderedBuffer 
+     * @param {*} renderedBuffer single channel buffer containing the rendered grains
      * @param {*} parameters 
      * @returns 
      */
-    getMultiChannelGrainBuffer(renderedBuffer, numChannels, parameters) {
+    getMultiChannelGrainBuffer(singleChannelGrainBuffer) {
         return new Promise((resolve) => {
             var audioContext = new AudioContext();
-            var multiChannelGrainBuffer = audioContext.createBuffer(numChannels, parameters.Duration * 44100, 44100);
-            for(var i = 0; i < numChannels; i++) {
+            var multiChannelGrainBuffer = audioContext.createBuffer(this.numChannels, this.parameters.Duration * audioContext.sampleRate, audioContext.sampleRate);
+            for(var i = 0; i < this.numChannels; i++) {
                 var channelBuffer = multiChannelGrainBuffer.getChannelData(i);
-                var startIndex = i * parameters.Duration * 44100;
+                var startIndex = i * this.parameters.Duration * audioContext.sampleRate;
                 for(var j = 0; j < channelBuffer.length; j++) {
-                    channelBuffer[j] = renderedBuffer.getChannelData(0)[startIndex + j];
+                    channelBuffer[j] = singleChannelGrainBuffer.getChannelData(0)[startIndex + j];
                 }
             }
             resolve(multiChannelGrainBuffer);
@@ -157,32 +156,29 @@ class RawDataSonification {
         return new Promise((resolve) => {
 
             /** By principle, we can  use grains of different sizes passing a grainDuration parameter, but for now we assume the same duration for each grain */
-
-            const duration = 15;
             const audioContext = new AudioContext();
-            
+            const duration = 15;
+
             // Define the minimum length which allow the buffer to be played at audio rate for the whole desired duration
-            const N_ar = audioContext.sampleRate * duration;
-            
-            // Define the minimum length to contain the data
+            const N_ar = audioContext.sampleRate * duration; 
             const overSamplingFactor = Math.round(N_ar / multiChannelInputBuffer.getChannelData(0).length);
+            // Define the minimum length to contain the data
             const N_data = multiChannelInputBuffer.getChannelData(0).length * overSamplingFactor + this.multiChannelGrainBuffer.getChannelData(0).length - overSamplingFactor;
             
             const outputBufferLength = Math.max(N_ar, N_data)
+            
+            var outputNumberOfChannels = multiChannelInputBuffer.numberOfChannels;
 
-            //console.log("N_ar: " + N_ar + " N_data: " + N_data + " outputBufferLength: " + outputBufferLength);
-
-            const multiChannelOutputBuffer = audioContext.createBuffer(multiChannelInputBuffer.numberOfChannels, outputBufferLength, audioContext.sampleRate);
-                        
+            const multiChannelOutputBuffer = audioContext.createBuffer(outputNumberOfChannels, outputBufferLength, audioContext.sampleRate);
+            
             for(let channelNum = 0; channelNum < multiChannelInputBuffer.numberOfChannels; channelNum++) {
-                console.log("Processing signal " + (channelNum + 1) + " of " + multiChannelInputBuffer.numberOfChannels);
                 
-                //this.outputWindow.innerHTML += "<br/>Processing signal " + (channelNum + 1) + " of " + multiChannelInputBuffer.numberOfChannels;
-
                 let channelBuffer = multiChannelInputBuffer.getChannelData(channelNum);
                 let grainBuffer = this.multiChannelGrainBuffer.getChannelData(channelNum);
                 let outputBuffer = multiChannelOutputBuffer.getChannelData(channelNum);
+                
                 for(let i = 0; i < channelBuffer.length; i++) {
+                    // if the value is not zero, we can add the grain, otherwise we just copy the data
                     if(channelBuffer[i] > 0) {
                         let grainStartIndex = i * overSamplingFactor;
                         let grainEndIndex = grainStartIndex + grainBuffer.length;
@@ -195,10 +191,20 @@ class RawDataSonification {
                             outputBuffer[j + i * overSamplingFactor] += 0;
                         }
                     }
+                }  
+                
+                // Normalize the output buffer
+                let maxValue = 1;
+                for(let i = 0; i < outputBuffer.length; i++) {
+                    if(outputBuffer[i] > maxValue) {
+                        maxValue = outputBuffer[i];
+                    }
+                }
+                console.log("Normalization factor: " + 1.0 / maxValue);
+                for(let i = 0; i < outputBuffer.length; i++) {
+                    outputBuffer[i] = outputBuffer[i] * (1 / maxValue);
                 }
             }
-
-            //console.log("Sonification completed");
 
             this.outputWindow.innerHTML += "<br/>Sonification Completed!";
             resolve(multiChannelOutputBuffer);
@@ -207,30 +213,47 @@ class RawDataSonification {
     }
 
     play(buffer) {
+        
+        if(this.state === "playing") {
+            this.stop();
+        }
+        this.state = "playing";
 
-        if(!buffer) {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+        
+        if(!buffer) { 
             buffer = this.sonifiedSignals;
         }
+        
+        const panningArray = this.createPanningArray(buffer.numberOfChannels);
+        for (let i = 0; i < buffer.numberOfChannels; i++) {
+            
+            let singleChannelBuffer = this.audioCtx.createBuffer(1, buffer.length, this.audioCtx.sampleRate);
+            singleChannelBuffer.getChannelData(0).set(buffer.getChannelData(i));
+            
+            let source = this.audioCtx.createBufferSource();
+            source.buffer = singleChannelBuffer;
 
-        // RESUME THE AUDIO CONTEXT
-        if (this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume();
+            let gainNode = this.audioCtx.createGain();
+            gainNode.gain.value = this.parameters.Gain;
+            
+            let pannerNode = this.audioCtx.createStereoPanner();
+            pannerNode.pan.value = panningArray[i];
+            
+            source.connect(gainNode);
+            gainNode.connect(pannerNode);
+            pannerNode.connect(this.audioCtx.destination);
+            
+            source.start(0);
+            source.stop(0 + buffer.duration);
         }
 
-        const source = this.audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.audioCtx.destination);
-        source.start();
         this.launchTimeCursor(buffer.duration)
-        source.stop(this.audioCtx.currentTime + buffer.duration);
     }
 
     launchTimeCursor(bufferDuration) {
 
-        const duration = bufferDuration - this.multiChannelGrainBuffer.duration; // il cursore è più veloce
-        console.log("Duration: " + duration);
-        console.log("Buffer duration: " + bufferDuration);
-        console.log("Grain duration: " + this.multiChannelGrainBuffer.duration);
+        const duration = bufferDuration - this.multiChannelGrainBuffer.duration;
 
         var cursor_samples = 10000
         var cursor_sampleRate = cursor_samples/duration
@@ -254,8 +277,17 @@ class RawDataSonification {
             moveCursor(i)
         }
 
-        setTimeout(() => {timeCursor.remove()}, bufferDuration * 1000)
+        setTimeout(() => {
+            timeCursor.remove()
+            this.state = "idle"
+        }, bufferDuration * 1000)
 
+        // return(timeCursor)
+    }
+
+    stop() {
+        document.querySelector(".time-cursor").remove()
+        this.audioCtx.close();
     }
 }
 

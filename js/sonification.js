@@ -8,7 +8,7 @@ export class Sonification {
 
         this.browser = browser
         this.chr = this.browser.referenceFrameList[0]['chr']
-        
+
         for(let epigenome of epigenomes) {
             if(epigenome["chr"] === this.chr) {
                 this.signals = epigenome["histones"]
@@ -28,7 +28,7 @@ export class Sonification {
         this.loadTracks().then(() => {
             console.log("Tracks loaded")
         })
-        
+
         console.log(this.signals)
         console.log(this.sonifications)
 
@@ -60,12 +60,12 @@ export class Sonification {
         this.$sonification_container = document.createElement("div");
         this.$sonification_container.classList.add("sonification-container");
 
-        this.$igv_div = document.getElementById("igv-main");
-        // this.$igv_div = document.querySelector(".row");
+        // this.$igv_div = document.getElementById("igv-main");
+        this.$igv_div = document.querySelector(".row");
         this.$igv_div.appendChild(this.$sonification_container);
-        this.$igv_div.addEventListener('change', (e) => { 
+        this.$igv_div.addEventListener('change', (e) => {
             if(e.target.getAttribute("name") === "chromosome-select-widget") {
-                this.chromosomeChanged() 
+                this.chromosomeChanged()
             }
         });
 
@@ -93,7 +93,7 @@ export class Sonification {
         }
 
         bottomContainer.classList.add("sonification-bottom-container");
-        
+
         let leftContainer = document.createElement("div");
         leftContainer.classList.add("sonification-left-container");
 
@@ -138,6 +138,7 @@ export class Sonification {
                 this.configureSonification(sonificationConfig)
             };
 
+
             sonification_column.appendChild(btn)
 
             var sonification_controller = document.createElement("div")
@@ -145,7 +146,7 @@ export class Sonification {
             sonification_controller.setAttribute("id", `${formatted_name}-controller`)
             this.createController(sonification_controller, formatted_name, sonification["init_params"])
             sonification_column.appendChild(sonification_controller)
-            
+
         }
 
         var outputWindow = document.createElement("div");
@@ -167,7 +168,7 @@ export class Sonification {
     }
 
     createController(sonification_controller, formatted_name, params) {
-        
+
         function sliderFactory(parentDiv, formatted_name, config) {
 
             var slider_name = config["name"]
@@ -175,17 +176,17 @@ export class Sonification {
             var max = config["max"]
             var step = config["step"]
             var value = config["value"]
-    
+
             var slider_container = document.createElement("div");
             slider_container.classList.add("slider-container");
             parentDiv.appendChild(slider_container);
-    
+
             var slider_label = document.createElement("label")
             slider_label.classList.add("slider-label");
             slider_label.setAttribute("id", `${formatted_name}-${slider_name}-label`)
             slider_label.innerHTML = `${slider_name}: ${value}`;
             slider_container.appendChild(slider_label)
-        
+
             var slider = document.createElement("input");
             slider.type = "range";
             slider.classList.add("sonification-slider");
@@ -194,18 +195,18 @@ export class Sonification {
             slider.max = max;
             slider.step = step;
             slider.value = value;
-    
+
             slider.oninput = (e) => {
                 slider_label.innerHTML = `${slider_name}: ${e.target.value}`;
             }
-            
+
             if(formatted_name != "raw-data-sonification") {
                 slider.setAttribute("disabled", "disabled");
             }
 
             slider_container.appendChild(slider);
         }
-        
+
         for(let param of params) {
             sliderFactory(sonification_controller, formatted_name, param);
         }
@@ -221,18 +222,17 @@ export class Sonification {
         var params = sonification["params"]
 
         if(signals_names.length === 0) {
-            //console.log("No signals to play")
             this.outputWindow.innerHTML = "No signals to play";
             return
         }
-        
+
         // RETRIEVE CURRENT CONTROL PARAMETERS FROM UI
         var params_dict = {}
         for (let param of params) {
             var param_name = param["name"]
             var slider = document.getElementById(`${formatted_name}-${param_name}-slider`)
             var value = Number(slider.value)
-            params_dict[param_name] = value        
+            params_dict[param_name] = value
         }
 
         var sonificationDuration = 15;
@@ -240,14 +240,11 @@ export class Sonification {
         // CHECK IF THE SONIFICATION IS CACHED
         if(this.sonificationIsCached(formatted_name, signals_names, params_dict, sonification["locus"], sonificationDuration)) {
             // PLAY THE CACHED DATA
-            //console.log("Playing cached data")
-            
             this.outputWindow.innerHTML = "RAW DATA SONIFICATION<br/>Playing Cached Data...";
-
             this.cache[formatted_name]["processor"].play();
             return;
         }
-        
+
         // ELSE RETRIEVE AND TRIM THE SIGNALS TO SONIFY
         var signals_toProcess = []
         for(let signal of signals_names) {
@@ -284,7 +281,7 @@ export class Sonification {
             var buffer_length = signals_toProcess[0].length;
             var offlineCtx = new OfflineAudioContext(num_channels, buffer_length, 48000);
             var multiChannelInputbuffer = offlineCtx.createBuffer(num_channels, buffer_length, offlineCtx.sampleRate);
-            
+
             // LOAD THE DATA INTO THE BUFFER
             for(var i = 0; i < num_channels; i++) {
                 var channel = multiChannelInputbuffer.getChannelData(i);
@@ -292,7 +289,7 @@ export class Sonification {
                     channel[j] = signals_toProcess[i][j]
                 }
             }
-                        
+
             // CREATE A NEW SONIFICATION INSTANCE AND STORE NEW CACHES
             resolve(new RawDataSonification(multiChannelInputbuffer, params_dict))
         })
@@ -335,7 +332,7 @@ export class Sonification {
         return isCached;
 
     }
-        
+
     chromosomeChanged() {
         let delay = 250;
         new Promise(resolve => setTimeout(resolve, delay)).then(() => {
