@@ -8,71 +8,117 @@ export class Sonification {
 
         this.browser = browser
         this.chr = this.browser.referenceFrameList[0]['chr']
+        this.sonification_column = this.init();
 
-        for(let epigenome of epigenomes) {
-            if(epigenome["chr"] === this.chr) {
-                this.signals = epigenome["histones"]
-                break;
-            }
-        }
+        //if(this.chr != "all") {
 
-        for(let sonification of mySonifications) {
-            if(sonification["chr"] === this.chr) {
-                this.sonifications = sonification["sonifications"]
-                break;
-            }
-        }
+            // for(let epigenome of epigenomes) {
+            //     if(epigenome["chr"] === this.chr) {
+            //         this.signals = epigenome["histones"]
+            //         break;
+            //     }
+            // }
 
-        this.createView()
-
-        this.loadTracks().then(() => {
-            console.log("Tracks loaded")
-        })
-
-        console.log(this.signals)
-        console.log(this.sonifications)
-
+            // for(let sonification of mySonifications) {
+            //     if(sonification["chr"] === this.chr) {
+            //         this.sonifications = sonification["sonifications"]
+            //         break;
+            //     }
+            // }
+            
+            // this.createView(this.sonification_column)
+            
+            // this.loadTracks().then(() => {
+            //     console.log("Tracks loaded")
+            // })
+            
+            // console.log(this.signals)
+            // console.log(this.sonifications)
+            
+        //}
+        
         this.cache = {}
 
+    }
+
+    init() {
+        const sonicIGV = document.createElement("div");
+        sonicIGV.classList.add("sonicIGV-container");
+        const navBar = document.querySelector("nav");
+        navBar.after(sonicIGV);
+        const igvMain = document.querySelector("#igv-main");
+        igvMain.style.width = "60%";
+        sonicIGV.appendChild(igvMain);
+
+        const sonification_column = document.createElement("div");
+        sonification_column.classList.add("sonification-column");
+        sonification_column.style.width = "40%";
+
+        sonicIGV.appendChild(sonification_column);
+        
+        sonicIGV.addEventListener('change', (e) => {
+            if(e.target.getAttribute("name") === "chromosome-select-widget") {
+                console.log("Chromosome changed")
+
+                new Promise(resolve => setTimeout(resolve, 250)).then(() => {
+                    this.chr = this.browser.referenceFrameList[0]['chr']
+                    console.log(this.chr)
+                    this.loadTracks().then(() => {
+                        this.createView(this.sonification_column)
+                    })
+                })
+            }
+        });
+
+        return sonification_column;
     }
 
     /** Load tracks with respect to the selected chromosome */
     loadTracks() {
         return new Promise((resolve, reject) => {
+            for(let epigenome of epigenomes) {
+                if(epigenome["chr"] === this.chr) {
+                    this.signals = epigenome["histones"]
+                    break;
+                }
+            }
+    
+            for(let sonification of mySonifications) {
+                if(sonification["chr"] === this.chr) {
+                    this.sonifications = sonification["sonifications"]
+                    break;
+                }
+            }
+            
+            console.log(this.signals)
+            console.log(this.sonifications)
+
             var colors = ["#ee3333", "#33ee33", "#3333ee", "#eeee33", "#33eeee", "#ee33ee"];
             for(var i = 0; i < this.signals.length; i++) {
                 var signal = this.signals[i]
-                console.log(signal["url_track"])
+                this.browser.removeAllTracks();
                 this.browser.loadTrack({
                     url: signal["url_track"],
                     name: signal["name"],
                     autoHeight: true,
                     color: colors[i],
-                    displayMode: "COLLAPSED"
+                    displayMode: "EXPANDED"
                 })
             }
             resolve()
         })
     }
 
-    createView() {
+    createView(sonification_column) {
 
-        this.$sonification_container = document.createElement("div");
-        this.$sonification_container.classList.add("sonification-container");
-
-        // this.$igv_div = document.getElementById("igv-main");
-        this.$igv_div = document.querySelector(".row");
-        this.$igv_div.appendChild(this.$sonification_container);
-        this.$igv_div.addEventListener('change', (e) => {
-            if(e.target.getAttribute("name") === "chromosome-select-widget") {
-                this.chromosomeChanged()
-            }
-        });
+        while (sonification_column.firstChild) {
+            sonification_column.removeChild(sonification_column.lastChild);
+        }
 
         let topContainer = document.createElement("div");
         let bottomContainer = document.createElement("div");
-        this.$sonification_container.appendChild(topContainer);
-        this.$sonification_container.appendChild(bottomContainer);
+        sonification_column.appendChild(topContainer);
+        sonification_column.appendChild(bottomContainer);
 
         topContainer.classList.add("sonification-top-container");
         for(var i = 0; i < this.signals.length; i++) {
@@ -108,10 +154,10 @@ export class Sonification {
             var type = sonification["type"]
             var formatted_name = sonification["formatted_name"];
 
-            var sonification_column = document.createElement("div")
-            sonification_column.classList.add("sonification-column")
-            sonification_column.setAttribute("id", `${formatted_name}-column`)
-            leftContainer.appendChild(sonification_column);
+            var sonification_module = document.createElement("div")
+            sonification_module.classList.add("sonification-module")
+            sonification_module.setAttribute("id", `${formatted_name}-module`)
+            leftContainer.appendChild(sonification_module);
 
             var btn = document.createElement("button")
             btn.classList.add("sonification-button");
@@ -139,13 +185,13 @@ export class Sonification {
             };
 
 
-            sonification_column.appendChild(btn)
+            sonification_module.appendChild(btn)
 
             var sonification_controller = document.createElement("div")
             sonification_controller.classList.add("sonification-controller")
             sonification_controller.setAttribute("id", `${formatted_name}-controller`)
             this.createController(sonification_controller, formatted_name, sonification["init_params"])
-            sonification_column.appendChild(sonification_controller)
+            sonification_module.appendChild(sonification_controller)
 
         }
 

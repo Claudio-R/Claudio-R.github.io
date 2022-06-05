@@ -404,6 +404,12 @@ label.dropdown-item {
 
 /* SONIFICATION */
 
+.sonicIGV-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
 .time-cursor {
     display: block;
     width: 1px;
@@ -415,7 +421,7 @@ label.dropdown-item {
     border-left-width: medium;
 }
 
-.sonification-container {
+.sonification-column {
     display: flex;
     flex-flow: column;
     flex-wrap: nowrap;
@@ -425,6 +431,16 @@ label.dropdown-item {
     width: 100%;
     margin-top: 10px;
     padding: 10px;
+
+    /* position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    box-sizing: border-box;
+    height: 100%; */
+
 }
 
 .sonification-top-container {
@@ -443,18 +459,18 @@ label.dropdown-item {
     /* justify-content: space-between; */
     /* align-items: center; */
     margin-top: 10px;
-    /* height: fit-content; */
+    height: 100%;
     width: 100%;
 }
 
 .sonification-left-container {
     display: flex;
-    flex-flow: row;
+    flex-flow: column;
     flex-wrap: nowrap;
     justify-content: space-between;
     /* align-items: center; */
-    height: fit-content;
-    width: 70%;
+    height: 100%;
+    width: 50%;
 }
 
 .sonification-right-container {
@@ -464,7 +480,7 @@ label.dropdown-item {
     /* justify-content: space-around; */
     /* align-items: center; */
     /* height: fit-content; */
-    width: 30%;
+    width: 50%;
 }
 
 .signal-box {
@@ -483,7 +499,7 @@ label.dropdown-item {
     font-family: 'Times New Roman', Times, serif;
 }
 
-.sonification-column {
+.sonification-module {
     display: flex;
     flex-flow: column;
     flex-wrap: nowrap;
@@ -492,7 +508,7 @@ label.dropdown-item {
     /* align-items: center; */
     padding: 4px;
     width: 100%;
-    /* height: 100%; */
+    height: 100%;
     border: 1px solid #e0dede;
     padding-bottom: 30px;
 }
