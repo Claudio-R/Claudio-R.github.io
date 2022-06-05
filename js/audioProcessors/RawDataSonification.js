@@ -23,7 +23,6 @@ class RawDataSonification {
                     this.process(multiChannelInputBuffer).then((multiChannelOutputBuffer) => {
                         console.log(multiChannelOutputBuffer);
                         this.sonifiedSignals = multiChannelOutputBuffer;
-                        this.play();
                     });
                 });
             });
@@ -206,7 +205,7 @@ class RawDataSonification {
                 }
             }
 
-            this.outputWindow.innerHTML += "<br/>Sonification Completed!";
+            this.outputWindow.innerHTML += "<br/>Sonification Completed!<br/>Press 'Play' to hear the result.";
             resolve(multiChannelOutputBuffer);
 
         });
@@ -286,8 +285,14 @@ class RawDataSonification {
     }
 
     stop() {
-        document.querySelector(".time-cursor").remove()
-        this.audioCtx.close();
+        // document.querySelector(".time-cursor").remove()
+        let cursorOn = document.querySelectorAll(".time-cursor")
+        for (let i = 0; i < cursorOn.length; i++) {
+            cursorOn[i].setAttribute("style", "border-left-color: transparent")
+        } 
+        this.audioCtx.close().then(() => {
+            this.state = "idle"
+        });
     }
 }
 
