@@ -94,7 +94,35 @@ json.dump(
                         "min": 0.25, 
                         "max": 1.0, 
                         "step": 0.01 
-                    }, 
+                    },
+                    {
+                        "name": "Attack",
+                        "value": 0.1,
+                        "min": 0.01,
+                        "max": 0.5,
+                        "step": 0.001
+                    },
+                    {
+                        "name": "Release",
+                        "value": 0.1,
+                        "min": 0.01,
+                        "max": 0.5,
+                        "step": 0.001
+                    },
+                    {
+                        "name": "Sustain",
+                        "value": 0.1,
+                        "min": 0.01,
+                        "max": 0.5,
+                        "step": 0.001
+                    },
+                    {
+                        "name": "Decay",
+                        "value": 0.1,
+                        "min": 0.01,
+                        "max": 0.5,
+                        "step": 0.001
+                    },
                     { 
                         "name": "Detune", 
                         "value": 0.0, 
