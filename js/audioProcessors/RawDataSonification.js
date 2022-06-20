@@ -188,6 +188,7 @@ class RawDataSonification {
     process(signals, grains) {
         return new Promise((resolve) => {
 
+            /** The overall sonification duration is fixed, but could be set by the user in a master control */
             const sonification_duration = 15;
 
             const sample_rate = grains.sampleRate;

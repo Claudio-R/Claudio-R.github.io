@@ -1,4 +1,7 @@
+/** The RawDataSonificationProcessor is loaded */
 import RawDataSonification from './audioProcessors/RawDataSonification.js';
+
+/** The binary data and initial configuration are stored into json files and loaded */
 import mySonifications from './resources/mySonifications.js';
 import epigenomes from './resources/epigenomes.js';
 
@@ -14,6 +17,10 @@ export class Sonification {
 
     }
 
+    /**
+     * Initialize the sonification system interface
+     * @returns {HTMLElement} sonification_column div element containing the sonification modules
+     */
     init() {
         const sonicIGV = document.createElement("div");
         sonicIGV.classList.add("sonicIGV-container");
@@ -30,6 +37,7 @@ export class Sonification {
         sonicIGV.appendChild(sonification_column);
         
         sonicIGV.addEventListener('change', (e) => {
+            /** This should also take into account selection made through the "all" canvas */
             if(e.target.getAttribute("name") === "chromosome-select-widget") {
                 console.log("Chromosome changed")
 
@@ -45,7 +53,10 @@ export class Sonification {
         return sonification_column;
     }
 
-    /** Load tracks with respect to the selected chromosome */
+    /** 
+     * Load tracks with respect to the selected chromosome (by now, only the epigenome binaries relative to chr1 are available )
+     * @returns {Promise} Promise that resolves when the tracks are loaded
+    */
     loadTracks() {
         return new Promise((resolve, reject) => {
             this.browser.removeAllTracks();
@@ -80,7 +91,7 @@ export class Sonification {
                     name: signal["name"],
                     autoHeight: true,
                     color: colors[i],
-                    displayMode: "EXPANDED"
+                    displayMode: "COLLAPSED",
                 })
             }
             resolve()
@@ -89,23 +100,17 @@ export class Sonification {
 
     createView(sonification_column) {
 
-        if(this.signals === undefined) {
+        if(this.signals === undefined || this.sonifications === undefined) {
             return
         }
 
-        if(this.sonifications === undefined) {
-            return
-        }
-
-        while (sonification_column.firstChild) {
-            sonification_column.removeChild(sonification_column.lastChild);
-        }
-
+        // DIVIDE THE SONIFICATION COLUMN INTO TWO PORTIONS
         let topContainer = document.createElement("div");
         let bottomContainer = document.createElement("div");
         sonification_column.appendChild(topContainer);
         sonification_column.appendChild(bottomContainer);
 
+        // TOP CONTAINER CONTAINS THE LIST OF SIGNALS
         topContainer.classList.add("sonification-top-container");
         for(var i = 0; i < this.signals.length; i++) {
             var column = document.createElement("div");
@@ -120,20 +125,18 @@ export class Sonification {
                 e.target.classList.toggle("signal-button-selected");
             }
             column.appendChild(signal_button);
-
         }
 
+        // BOTTOM CONTAINER IS DIVIDED INTO TWO PARTS
         bottomContainer.classList.add("sonification-bottom-container");
-
         let leftContainer = document.createElement("div");
         leftContainer.classList.add("sonification-left-container");
-
         let rightContainer = document.createElement("div");
         rightContainer.classList.add("sonification-right-container");
-
         bottomContainer.appendChild(leftContainer);
         bottomContainer.appendChild(rightContainer);
 
+        // LEFT CONTAINER CONTAINS THE SONIFICATION MODULES
         for(let sonification of this.sonifications) {
 
             var type = sonification["type"]
@@ -213,6 +216,7 @@ export class Sonification {
 
         }
 
+        // RIGHT CONTAINER CONTAINS THE OUTPUT WINDOW
         var outputWindow = document.createElement("div");
         outputWindow.classList.add("output-window");
         rightContainer.appendChild(outputWindow);
@@ -335,9 +339,8 @@ export class Sonification {
      * @param {*} formatted_name sonification formatted name
      * @param {*} signal_toProcess multi-dimensional array of data to process
      * @param {*} params_dict dictionary of control parameters
-     * @param {*} duration duration of the overall sonification
      */
-    instatiateSonifier(formatted_name, signals_toProcess, params_dict, duration) {
+    instatiateSonifier(formatted_name, signals_toProcess, params_dict) {
         return new Promise((resolve, reject) => {
             // CREATE MULTI CHANNEL BUFFER
             var num_channels = signals_toProcess.length;
@@ -354,7 +357,10 @@ export class Sonification {
             }
 
             // CREATE A NEW SONIFICATION INSTANCE AND STORE NEW CACHES
-            resolve(new RawDataSonification(multiChannelInputbuffer, params_dict))
+            /** Modify here if additional sonification processors are included */
+            if(formatted_name === "raw-data-sonification") {
+                resolve(new RawDataSonification(multiChannelInputbuffer, params_dict))
+            }
         })
     }
 
@@ -410,23 +416,4 @@ export class Sonification {
             this.cache[formatted_name]["processor"].stop();
         }
     }
-
-    chromosomeChanged() {
-        let delay = 250;
-        new Promise(resolve => setTimeout(resolve, delay)).then(() => {
-            this.chr = this.browser.referenceFrameList[0]['chr']
-            this.getSignals(this.epigenomes_url, this.chr).then(() => {
-                this.getAvailableSonifications(this.sonifications_url).then(() => {
-                    this.updateView()
-                })
-            })
-        })
-    }
-
-    updateView() {
-        if(this.signals) {
-            console.log(this.chr, this.signals.length)
-        }
-    }
-
 }

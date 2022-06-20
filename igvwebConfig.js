@@ -23,7 +23,8 @@ var igvwebConfig = {
     igvConfig:
         {
             genome: "hg19",
-            locus: "chr5:1-1,000,000",
+            // locus: "chr1:1-1,000,000",
+            locus: "all",
             genomeList: "resources/genomes.json",
             queryParametersSupported: true,
             showChromosomeWidget: true,
