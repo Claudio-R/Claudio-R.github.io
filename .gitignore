@@ -3,10 +3,6 @@
 /dist/
 /.idea/
 /node_modules/
-/build/
-/js/igv.js
-/js/igv.min.js
-/igvjs/
 /igvwebConfig-dev.js
 /igvwebConfig-bak.js
 /node_modules

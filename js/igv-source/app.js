@@ -45,7 +45,7 @@ import GtexUtils from "./gtexUtils.js"
 import version from "./version.js"
 import {createCircularViewResizeModal} from "./circularViewResizeModal.js"
 //EDITED:
-import { Sonification } from "./sonification.js";
+import { Sonification } from "../sonification.js";
 
 $(document).ready(async () => main(document.getElementById('igv-app-container'), igvwebConfig))
 
