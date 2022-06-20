@@ -119,10 +119,6 @@ async function main(container, config) {
 
     if (browser) {
         Globals.browser = browser
-        
-        //EDITED: Add the event listener to locus change
-        //browser.on('locuschange', (referenceFrameList) => console.log(referenceFrameList[0]['start'], referenceFrameList[0]['end']))
-        
         await initializationHelper(browser, container, config)
     }
 }
