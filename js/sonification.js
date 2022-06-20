@@ -280,6 +280,10 @@ export class Sonification {
         }
     }
 
+    /**
+     * This function is called when the user clicks on the "Play" button of a sonification module.
+     * It checks if the sonification is cached, otherwise it instantiate a new sonification object.
+     */
     configureSonification(sonification) {
 
         // REQUIRED SONIFICATION
@@ -323,6 +327,7 @@ export class Sonification {
             }
         }
 
+        // SONIFY THE SIGNALS
         this.instatiateSonifier(formatted_name, signals_toProcess, params_dict, sonificationDuration).then((processor) => {
             this.cache[formatted_name] = {
                 "signals": signals_names,
