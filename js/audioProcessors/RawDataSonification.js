@@ -5,14 +5,14 @@ class RawDataSonification {
      * @param {*} numChannels 
      * @param {*} parameters 
      */
-    constructor(signalsBuffer, parameters) {
+    constructor(signals, config) {
         this.state = "idle";
 
-        this.parameters = parameters;
-        this.numChannels = signalsBuffer.numberOfChannels;
-        
         this.outputWindow = document.querySelector('.output-window-content');
         this.outputWindow.innerHTML = "RAW DATA SONIFICATION<br/>";
+
+        var input_buffer = this.configureProcessor(signals, config);
+        this.outputWindow.innerHTML += "Configuration Completed<br/>";
 
         this.outputWindow.innerHTML += "Generating Grains...";
         this.createGrains().then((args) => {
@@ -20,14 +20,44 @@ class RawDataSonification {
             this.listen(args[0]);
             this.grainDuration = args[1];
             this.deserialize(args[0], args[1]).then((multiChannelGrainsBuffer) => {
-                //this.listen(multiChannelGrainsBuffer);
-                this.process(signalsBuffer, multiChannelGrainsBuffer).then((processedBuffer) => {
-                    // this.listen(processedBuffer);
-                    // this.outputWindow.innerHTML += "<br/>Done!";
+                this.process(input_buffer, multiChannelGrainsBuffer).then((processedBuffer) => {
                     this.sonifiedSignals = processedBuffer;
                 });
             });
         });
+    }
+
+    /**
+     * This function is used to collect the binary data and configure the processor.
+     */
+    configureProcessor(signals, config) {
+        var signals_names = config.signals;
+        var startIndex = config.locus[0]/1000;
+        var endIndex = config.locus[1]/1000;
+
+        var num_channels = signals_names.length;
+        var buffer_length = endIndex - startIndex;
+        var sample_rate = 48000;
+        var offlineCtx = new OfflineAudioContext(num_channels, buffer_length, sample_rate);
+        var input_buffer = offlineCtx.createBuffer(num_channels, buffer_length, offlineCtx.sampleRate);
+
+        for(let j = 0; j < signals_names.length; j++) {
+            var name = signals_names[j];
+            var channel_data = input_buffer.getChannelData(j);
+            for(var i = 0; i < signals.length; i++) {
+                if(signals[i]["name"] === name) {
+                    var trimmed_signal = signals[i]["binary_data"].slice(startIndex, endIndex)
+                    for(var k = 0; k < trimmed_signal.length; k++) {
+                        channel_data[k] = trimmed_signal[k];
+                    }
+                }
+            }
+        }
+
+        this.parameters = config.params;
+        this.numChannels = num_channels;
+
+        return input_buffer;
     }
 
     /**

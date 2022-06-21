@@ -316,27 +316,44 @@ export class Sonification {
             return;
         }
 
-        // ELSE RETRIEVE AND TRIM THE SIGNALS TO SONIFY
-        var signals_toProcess = []
-        for(let signal of signals_names) {
-            for(var i = 0; i < this.signals.length; i++) {
-                if(this.signals[i]["name"] === signal) {
-                    var trimmed_signal = this.signals[i]["binary_data"].slice(start, end)
-                    signals_toProcess.push(trimmed_signal)
-                }
-            }
+        // ELSE INSTANTIATE A NEW SONIFICATION OBJECT
+        var config = {
+            "signals": signals_names,
+            "params": params_dict,
+            "locus": sonification["locus"],
+            "duration": sonificationDuration,
+        };
+
+        var processor;
+        if(formatted_name === "raw-data-sonification") {
+            processor = (new RawDataSonification(this.signals, config))
         }
 
-        // SONIFY THE SIGNALS
-        this.instatiateSonifier(formatted_name, signals_toProcess, params_dict, sonificationDuration).then((processor) => {
-            this.cache[formatted_name] = {
-                "signals": signals_names,
-                "params": params_dict,
-                "locus": sonification["locus"],
-                "duration": sonificationDuration,
-                "processor": processor
-            }
-        })
+        config["processor"] = processor;
+
+        this.cache[formatted_name] = config;
+
+        // // ELSE RETRIEVE AND TRIM THE SIGNALS TO SONIFY
+        // var signals_toProcess = []
+        // for(let signal of signals_names) {
+        //     for(var i = 0; i < this.signals.length; i++) {
+        //         if(this.signals[i]["name"] === signal) {
+        //             var trimmed_signal = this.signals[i]["binary_data"].slice(start, end)
+        //             signals_toProcess.push(trimmed_signal)
+        //         }
+        //     }
+        // }
+
+        // // SONIFY THE SIGNALS
+        // this.instatiateSonifier(formatted_name, signals_toProcess, params_dict, sonificationDuration).then((processor) => {
+        //     this.cache[formatted_name] = {
+        //         "signals": signals_names,
+        //         "params": params_dict,
+        //         "locus": sonification["locus"],
+        //         "duration": sonificationDuration,
+        //         "processor": processor
+        //     }
+        // })
     }
 
     /**
