@@ -65,29 +65,66 @@ class RawDataSonification {
      * @param {*} num_channels 
      * @returns an array of panning values
      */
-    createPanningArray() {
-        switch(this.numChannels) {
-            case 1:
-                return [0];
-            case 2:
-                return [-1, 1];
-            case 3:
-                return [-1, 0, 1];
-            case 4:
-                return [-1, -0.5, 0.5, 1];
-            case 5:
-                return [-1, -0.5, 0, 0.5, 1];
-            case 6:
-                return [-1, -0.5, -0.25, 0.25, 0.5, 1];
+    createPanningArray(w, num_channels) {
+        var pan_array = [];
+        if(num_channels == 1){
+            pan_array.push(0);
         }
+        else {
+            const step = 2*w / (num_channels - 1);
+            for(let i = 0; i < num_channels; i++) {
+                let pan = -w + i * step;
+                pan_array.push(pan);
+            }
+        }
+        console.log(pan_array);
+        return pan_array;
     }
-
+    
     /**
      * @returns a promise that resolves to a single-channel buffer containing the rendered grains
      * This function is called by the constructor. It is useful to allow the user to listen to the grains before they are processed.
      */
     createGrains() {
         return new Promise((resolve, reject) => {
+
+            /** Compute amplitude compensation according to a_weighting */
+            function a_weighting(frequency) {
+                //return Math.pow(frequency, 3) / (Math.pow(frequency, 3) + Math.pow(20.6, 3) + 1.07 * 20.6 * Math.pow(frequency, 2) + 1.07 * Math.pow(20.6, 2) * frequency + 1.07 * Math.pow(20.6, 2) * Math.pow(frequency, 2));
+                var k =  3.5041384e16;
+                var c1 = 424.31867740601;
+                var c2 = 11589.093052022;
+                var c3 = 544440.67046057;
+                var c4 = 148698928.24309;
+        
+                var f_square = frequency * frequency;
+                var m1 = Math.pow(f_square, 4);
+                var n1 = Math.pow(f_square + c1, 2);
+                var n2 = c2 + f_square;
+                var n3 = c3 + f_square;
+                var n4 = Math.pow(f_square + c4, 2);
+                var attenuation_squared = k * m1 / (n1 * n2 * n3 * n4);
+                var gain = 1/Math.sqrt(attenuation_squared);
+                return gain;
+            }
+
+            /** Compute panning values according to the  */
+
+            //     switch(this.numChannels) {
+            //         case 1:
+            //             return [0];
+            //         case 2:
+            //             return [-1, 1];
+            //         case 3:
+            //             return [-1, 0, 1];
+            //         case 4:
+            //             return [-1, -0.5, 0.5, 1];
+            //         case 5:
+            //             return [-1, -0.5, 0, 0.5, 1];
+            //         case 6:
+            //             return [-1, -0.5, -0.25, 0.25, 0.5, 1];
+            //     }
+            // }
             
             const root = this.parameters.Frequency;
             const detune = this.parameters.Detune;
@@ -95,9 +132,10 @@ class RawDataSonification {
             const release = this.parameters.Release;
             const sustain = this.parameters.Sustain;
             const decay = this.parameters.Decay;
+            const stereo_width = this.parameters["Stereo Width"];
 
             const duration = attack + sustain + decay + 5*release;
-            const pan_array = this.createPanningArray();
+            const pan_array = this.createPanningArray(stereo_width, this.numChannels);
 
             const num_channels = this.numChannels;
             const num_samples = num_channels * duration * 48000;
@@ -137,8 +175,10 @@ class RawDataSonification {
                         envNode.gain.setTargetAtTime(0, startTime + attack + decay + sustain, release);
                         
                         /** Use an amplitude compensation mechanism */
-                        gainNode.gain.value = Math.pow((root / frequency), 0.3333);
-                        
+                        // gainNode.gain.value = Math.pow((root / frequency), 0.3333);
+                        let gain = a_weighting(frequency);
+                        gainNode.gain.value = gain;
+
                         /** Set panning */
                         panNode.pan.value = pan_array[index];
 
@@ -150,7 +190,8 @@ class RawDataSonification {
                         //gainNode.connect(offlineCtx.destination);
 
                         outputWindow.innerHTML += "<br/>Grain " + index + "<br/>Frequency: " + frequency;
-                        outputWindow.innerHTML += "<br/>Pan: " + pan_array[index];
+                        outputWindow.innerHTML += "<br/>Gain: " + gain.toFixed(2);
+                        outputWindow.innerHTML += "<br/>Pan: " + pan_array[index].toFixed(2);
 
                         /** Set start and stop times for the grains*/
                         oscNode.start(startTime);
@@ -311,7 +352,7 @@ class RawDataSonification {
             buffer = this.sonifiedSignals;
         }
         
-        const pan_array = this.createPanningArray(buffer.numberOfChannels);
+        const pan_array = this.createPanningArray(1, buffer.numberOfChannels);
         console.log(pan_array);
 
         for (let i = 0; i < buffer.numberOfChannels; i++) {
