@@ -2,24 +2,24 @@
 import RawDataSonification from './audioProcessors/RawDataSonification.js';
 
 /** The binary data and initial configuration are stored into json files and loaded */
-import mySonifications from './resources/mySonifications.js';
+import index from './resources/index.js';
 import epigenomes from './resources/epigenomes.js';
 
-export class Sonification {
-
+export class SonicIGV {
+    /**
+     * The SonicIGV acts as a sort of decorator for the whole IGV platform. It needs a reference to the igv browser to modify the GUI
+     * @param {IGVBrowser} browser the igv browser instantiated at the creation of the app
+     */
     constructor(browser) {
-
         this.browser = browser
         this.chr = this.browser.referenceFrameList[0]['chr']
-        this.sonification_column = this.init();
-        
+        this.sonification_column = this.init();   
         this.cache = {}
-
     }
 
     /**
      * Initialize the sonification system interface
-     * @returns {HTMLElement} sonification_column div element containing the sonification modules
+     * @returns {HTMLElement} a div element used as a container for the sonification modules
      */
     init() {
         const sonicIGV = document.createElement("div");
@@ -37,13 +37,13 @@ export class Sonification {
         sonicIGV.appendChild(sonification_column);
         
         sonicIGV.addEventListener('change', (e) => {
-            /** This should also take into account selection made through the "all" canvas */
+            /** BUG: This should also take into account selection made through the "all" canvas */
             if(e.target.getAttribute("name") === "chromosome-select-widget") {
-                console.log("Chromosome changed")
-
+                /** wait a few milliseconds to retrieve the correct chromosome */
                 new Promise(resolve => setTimeout(resolve, 250)).then(() => {
-                    this.chr = this.browser.referenceFrameList[0]['chr']
-                    this.loadTracks().then(() => {
+                    var chr = this.browser.referenceFrameList[0]['chr']
+                    console.log("Chromosome changed ", chr)
+                    this.loadTracks(chr).then(() => {
                         this.createView(this.sonification_column)
                     })
                 })
@@ -57,25 +57,25 @@ export class Sonification {
      * Load tracks with respect to the selected chromosome (by now, only the epigenome binaries relative to chr1 are available )
      * @returns {Promise} Promise that resolves when the tracks are loaded
     */
-    loadTracks() {
+    loadTracks(chr) {
         return new Promise((resolve, reject) => {
             this.browser.removeAllTracks();
-            if(this.chr != "chr1") {
+            if(chr != "chr1") {
                 this.signals = undefined;
                 this.sonifications = undefined;
                 resolve()
             }
 
             for(let epigenome of epigenomes) {
-                if(epigenome["chr"] === this.chr) {
+                if(epigenome["chr"] === chr) {
                     this.signals = epigenome["histones"]
                     break;
                 }
             }
     
-            for(let sonification of mySonifications) {
-                if(sonification["chr"] === this.chr) {
-                    this.sonifications = sonification["sonifications"]
+            for(let element of index) {
+                if(element["chr"] === chr) {
+                    this.sonifications = element["sonifications"]
                     break;
                 }
             }
@@ -100,7 +100,11 @@ export class Sonification {
 
     createView(sonification_column) {
 
-        if(this.signals === undefined || this.sonifications === undefined) {
+        while(sonification_column.firstChild){
+            sonification_column.remove(sonification_column.firstChild)
+        }
+        
+        if(this.signals == undefined || this.sonifications == undefined) {
             return
         }
 
@@ -112,12 +116,15 @@ export class Sonification {
 
         // TOP CONTAINER CONTAINS THE LIST OF SIGNALS
         topContainer.classList.add("sonification-top-container");
-        for(var i = 0; i < this.signals.length; i++) {
-            var column = document.createElement("div");
+        var row1 = document.createElement("div");
+        row1.classList.add("sonification-row");
+        topContainer.appendChild(row1)
+        for(let i = 0; i < this.signals.length; i++) {
+            let column = document.createElement("div");
             column.classList.add("signal-box");
-            topContainer.appendChild(column);
+            row1.appendChild(column);
 
-            var signal_button = document.createElement("button");
+            let signal_button = document.createElement("button");
             signal_button.classList.add("signal-button");
             signal_button.innerHTML = this.signals[i]["name"];
             signal_button.setAttribute("id", `${this.signals[i]["name"]}-signal-button`);
@@ -125,6 +132,25 @@ export class Sonification {
                 e.target.classList.toggle("signal-button-selected");
             }
             column.appendChild(signal_button);
+        }
+
+        // TOP CONTAINER CONTAINS ALSO THE POSSIBLE SONIFICATIONS
+        var row2 = document.createElement("div");
+        row2.classList.add("sonification-row");
+        topContainer.appendChild(row2)
+        for(let i = 0; i < this.sonifications.length; i++) {
+            let column = document.createElement("div");
+            column.classList.add("signal-box");
+            row2.appendChild(column);
+
+            let sonification_button = document.createElement("button");
+            sonification_button.classList.add("sonification-button");
+            sonification_button.innerHTML = this.sonifications[i]["type"];
+            sonification_button.setAttribute("id", `${this.signals[i]["formatted_name"]}-sonification-button`);
+            sonification_button.onclick = (e) => {
+                e.target.classList.toggle("sonification-button-selected");
+            }
+            column.appendChild(sonification_button);
         }
 
         // BOTTOM CONTAINER IS DIVIDED INTO TWO PARTS
@@ -157,10 +183,10 @@ export class Sonification {
             if(formatted_name != "raw-data-sonification") {
                 btn.setAttribute("disabled", "disabled");
             }
+            
             btn.innerHTML = type;
             btn.onclick = (e) => {
                 var selected_signals_names = [];
-
                 for(var i = 0; i < this.signals.length; i++) {
                     var signal_button = document.getElementById(`${this.signals[i]["name"]}-signal-button`);
                     if(signal_button.classList.contains("signal-button-selected")) {
@@ -235,6 +261,12 @@ export class Sonification {
 
     }
 
+    /**
+     * This function creates the sliders used to interact with the sonification module
+     * @param {HTMLElement} sonification_controller parent div the sliders are attached to
+     * @param {String} formatted_name uniquely defined string for each sonification module 
+     * @param {JSON} params contains information about the sliders to create 
+     */
     createController(sonification_controller, formatted_name, params) {
 
         function sliderFactory(parentDiv, formatted_name, config) {
@@ -282,16 +314,15 @@ export class Sonification {
 
     /**
      * This function is called when the user clicks on the "Play" button of a sonification module.
-     * It checks if the sonification is cached, otherwise it instantiate a new sonification object.
+     * It retrieves the current value from the sliders and checks if the sonification is cached. If it is not, a new sonification processor is instantiated.
+     * @param {JSON} sonificationConfig a configuration object for the new sonification
      */
-    configureSonification(sonification) {
+    configureSonification(sonificationConfig) {
 
         // REQUIRED SONIFICATION
-        var formatted_name = sonification["formatted_name"];
-        var signals_names = sonification["signals_names"]
-        var start = sonification["locus"][0] / 1000;
-        var end = sonification["locus"][1] / 1000;
-        var params = sonification["params"]
+        var formatted_name = sonificationConfig["formatted_name"];
+        var signals_names = sonificationConfig["signals_names"]
+        var params = sonificationConfig["params"]
 
         if(signals_names.length === 0) {
             this.outputWindow.innerHTML = "No signals to play";
@@ -299,18 +330,18 @@ export class Sonification {
         }
 
         // RETRIEVE CURRENT CONTROL PARAMETERS FROM UI
-        var params_dict = {}
+        var current_params = {}
         for (let param of params) {
             var param_name = param["name"]
             var slider = document.getElementById(`${formatted_name}-${param_name}-slider`)
             var value = Number(slider.value)
-            params_dict[param_name] = value
+            current_params[param_name] = value
         }
 
         var sonificationDuration = 15;
 
         // CHECK IF THE SONIFICATION IS CACHED
-        if(this.sonificationIsCached(formatted_name, signals_names, params_dict, sonification["locus"], sonificationDuration)) {
+        if(this.sonificationIsCached(formatted_name, signals_names, current_params, sonificationConfig["locus"], sonificationDuration)) {
             // PLAY THE CACHED DATA
             this.outputWindow.innerHTML += "</br>Sonification is cached, press 'Play' to play cached data<br/>";
             return;
@@ -319,12 +350,13 @@ export class Sonification {
         // ELSE INSTANTIATE A NEW SONIFICATION OBJECT
         var config = {
             "signals": signals_names,
-            "params": params_dict,
-            "locus": sonification["locus"],
+            "params": current_params,
+            "locus": sonificationConfig["locus"],
             "duration": sonificationDuration,
         };
 
         var processor;
+        // MODIFY BELOW IF OTHER PROCESSOR ARE CREATED
         if(formatted_name === "raw-data-sonification") {
             processor = (new RawDataSonification(this.signals, config))
         }
@@ -333,60 +365,18 @@ export class Sonification {
 
         this.cache[formatted_name] = config;
 
-        // // ELSE RETRIEVE AND TRIM THE SIGNALS TO SONIFY
-        // var signals_toProcess = []
-        // for(let signal of signals_names) {
-        //     for(var i = 0; i < this.signals.length; i++) {
-        //         if(this.signals[i]["name"] === signal) {
-        //             var trimmed_signal = this.signals[i]["binary_data"].slice(start, end)
-        //             signals_toProcess.push(trimmed_signal)
-        //         }
-        //     }
-        // }
-
-        // // SONIFY THE SIGNALS
-        // this.instatiateSonifier(formatted_name, signals_toProcess, params_dict, sonificationDuration).then((processor) => {
-        //     this.cache[formatted_name] = {
-        //         "signals": signals_names,
-        //         "params": params_dict,
-        //         "locus": sonification["locus"],
-        //         "duration": sonificationDuration,
-        //         "processor": processor
-        //     }
-        // })
     }
 
     /**
-     * The General idea is to load the data to process into a buffer and feed the proper audio processor
-     * @param {*} formatted_name sonification formatted name
-     * @param {*} signal_toProcess multi-dimensional array of data to process
-     * @param {*} params_dict dictionary of control parameters
+     * Check if the sonification is cached. Only the last sonification is stored.
+     * @param {String} formatted_name 
+     * @param {List} signals_names 
+     * @param {JSON} current_params 
+     * @param {String} locus 
+     * @param {Number} duration 
+     * @returns 
      */
-    instatiateSonifier(formatted_name, signals_toProcess, params_dict) {
-        return new Promise((resolve, reject) => {
-            // CREATE MULTI CHANNEL BUFFER
-            var num_channels = signals_toProcess.length;
-            var buffer_length = signals_toProcess[0].length;
-            var offlineCtx = new OfflineAudioContext(num_channels, buffer_length, 48000);
-            var multiChannelInputbuffer = offlineCtx.createBuffer(num_channels, buffer_length, offlineCtx.sampleRate);
-
-            // LOAD THE DATA INTO THE BUFFER
-            for(var i = 0; i < num_channels; i++) {
-                var channel = multiChannelInputbuffer.getChannelData(i);
-                for(var j = 0; j < buffer_length; j++) {
-                    channel[j] = signals_toProcess[i][j]
-                }
-            }
-
-            // CREATE A NEW SONIFICATION INSTANCE AND STORE NEW CACHES
-            /** Modify here if additional sonification processors are included */
-            if(formatted_name === "raw-data-sonification") {
-                resolve(new RawDataSonification(multiChannelInputbuffer, params_dict))
-            }
-        })
-    }
-
-    sonificationIsCached(formatted_name, signals_names, params_dict, locus, duration) {
+    sonificationIsCached(formatted_name, signals_names, current_params, locus, duration) {
 
         function signalsAreCached(oldSignals, newSignals){
             if(oldSignals.length !== newSignals.length) {
@@ -415,7 +405,7 @@ export class Sonification {
             var cached_params = this.cache[formatted_name]["params"]
             var cached_locus = this.cache[formatted_name]["locus"]
             var cached_duration = this.cache[formatted_name]["duration"]
-            if(signalsAreCached(cached_signals, signals_names) && paramsAreCached(cached_params, params_dict) && cached_locus[0] === locus[0] && cached_locus[1] === locus[1] && cached_duration === duration) {
+            if(signalsAreCached(cached_signals, signals_names) && paramsAreCached(cached_params, current_params) && cached_locus[0] === locus[0] && cached_locus[1] === locus[1] && cached_duration === duration) {
                 isCached = true;
             }
         }
@@ -424,6 +414,10 @@ export class Sonification {
 
     }
 
+    /**
+     * Play the last sonification produced or alert the user if no sonification have been played before
+     * @param {String} formatted_name 
+     */
     playSonification(formatted_name) {
         if(this.cache[formatted_name] !== undefined) {
             this.cache[formatted_name]["processor"].play();
@@ -433,6 +427,10 @@ export class Sonification {
         }
     }
 
+    /**
+     * Call the stop() method on the last stored sonification 
+     * @param {String} formatted_name 
+     */
     stopSonification(formatted_name) {
         if(this.cache[formatted_name] !== undefined) {
             this.cache[formatted_name]["processor"].stop();

@@ -1,10 +1,5 @@
 class RawDataSonification {
 
-    /**
-     * At the end, we will have the complete grain buffer
-     * @param {*} numChannels 
-     * @param {*} parameters 
-     */
     constructor(signals, config) {
         this.state = "idle";
 
@@ -16,8 +11,7 @@ class RawDataSonification {
 
         this.outputWindow.innerHTML += "Generating Grains...";
         this.createGrains().then((args) => {
-            /** The grains are presented to the listener */
-            this.listen(args[0]);
+            this.listen(args[0]); /** The grains are presented to the listener */
             this.grainDuration = args[1];
             this.deserialize(args[0], args[1]).then((multiChannelGrainsBuffer) => {
                 this.process(input_buffer, multiChannelGrainsBuffer).then((processedBuffer) => {
@@ -29,9 +23,13 @@ class RawDataSonification {
 
     /**
      * This function is used to collect the binary data and configure the processor.
+     * @param signals a reference to a 2D array containing the whole dataset
+     * @param config a JSON object containing the names of the signal to sonify, the region of interest and the parameters
+     * @returns an audio buffer with the correct binary data
      */
     configureProcessor(signals, config) {
         var signals_names = config.signals;
+        /** due to a mismatch in dimension, the locus retrieved by the browser must be divided by 1000 */
         var startIndex = config.locus[0]/1000;
         var endIndex = config.locus[1]/1000;
 
@@ -61,18 +59,18 @@ class RawDataSonification {
     }
 
     /**
-     * This should be parameterized.
-     * @param {*} num_channels 
+     * This function partizions the stereo space, according to the width defined by the user.
+     * @param w the width of the stereo space  
      * @returns an array of panning values
      */
-    createPanningArray(w, num_channels) {
+    createPanningArray(w) {
         var pan_array = [];
-        if(num_channels == 1){
+        if(this.numChannels == 1){
             pan_array.push(0);
         }
         else {
-            const step = 2*w / (num_channels - 1);
-            for(let i = 0; i < num_channels; i++) {
+            const step = 2*w / (this.numChannels - 1);
+            for(let i = 0; i < this.numChannels; i++) {
                 let pan = -w + i * step;
                 pan_array.push(pan);
             }
@@ -107,24 +105,6 @@ class RawDataSonification {
                 var gain = 1/Math.sqrt(attenuation_squared);
                 return gain;
             }
-
-            /** Compute panning values according to the  */
-
-            //     switch(this.numChannels) {
-            //         case 1:
-            //             return [0];
-            //         case 2:
-            //             return [-1, 1];
-            //         case 3:
-            //             return [-1, 0, 1];
-            //         case 4:
-            //             return [-1, -0.5, 0.5, 1];
-            //         case 5:
-            //             return [-1, -0.5, 0, 0.5, 1];
-            //         case 6:
-            //             return [-1, -0.5, -0.25, 0.25, 0.5, 1];
-            //     }
-            // }
             
             const root = this.parameters.Frequency;
             const detune = this.parameters.Detune;
@@ -133,9 +113,10 @@ class RawDataSonification {
             const sustain = this.parameters.Sustain;
             const decay = this.parameters.Decay;
             const stereo_width = this.parameters["Stereo Width"];
+            const gain0 = this.parameters.Gain;
 
             const duration = attack + sustain + decay + 5*release;
-            const pan_array = this.createPanningArray(stereo_width, this.numChannels);
+            const pan_array = this.createPanningArray(stereo_width);
 
             const num_channels = this.numChannels;
             const num_samples = num_channels * duration * 48000;
@@ -176,7 +157,7 @@ class RawDataSonification {
                         
                         /** Use an amplitude compensation mechanism */
                         // gainNode.gain.value = Math.pow((root / frequency), 0.3333);
-                        let gain = a_weighting(frequency);
+                        let gain = gain0*a_weighting(frequency);
                         gainNode.gain.value = gain;
 
                         /** Set panning */
@@ -219,7 +200,7 @@ class RawDataSonification {
      * @returns a promise that resolves to a multi-channel buffer
      */
     deserialize(grainsBuffer, duration) {
-        // const num_channels = this.numChannels;
+
         return new Promise((resolve, reject) => {
 
             const sample_rate = grainsBuffer.sampleRate;
@@ -228,8 +209,7 @@ class RawDataSonification {
 
             const offlineCtx = new OfflineAudioContext(num_channels, num_samples, sample_rate);
             
-            
-            /** Add to a mono signal */
+            /** Add to get a mono signal */
             const leftChannel = grainsBuffer.getChannelData(0);
             const rightChannel = grainsBuffer.getChannelData(1);
             const monoChannel = new Float32Array(grainsBuffer.length);
@@ -299,7 +279,7 @@ class RawDataSonification {
                     }
                 }  
                 
-                /** Normalize the output to avoid distortion */
+                /** Normalize the output to avoid distortio due to too many overlapping grains */
                 let maxValue = 1;
                 output.forEach((element) => {
                     if(element > maxValue) {
@@ -368,8 +348,7 @@ class RawDataSonification {
             let pannerNode = this.audioCtx.createStereoPanner();
             pannerNode.pan.value = pan_array[i];
             
-            source.connect(gainNode);
-            gainNode.connect(pannerNode);
+            source.connect(pannerNode);
             pannerNode.connect(this.audioCtx.destination);
             
             source.start(0);
@@ -382,7 +361,7 @@ class RawDataSonification {
     }
 
     /**
-     * This function is used to instantiate the time cursor.
+     * This function is used to instantiate a time cursor.
      * It would be better to move this to a separate class.
      * @param {*} bufferDuration is the duration of the buffer to be played, used to define the cursor speed.
      */

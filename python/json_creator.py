@@ -61,8 +61,8 @@ f = open("../js/resources/epigenomes.js", "a")
 f.write("; export default epigenomes;")
 f.close()
 
-f = open("../js/resources/mySonifications.js", "w")
-f.write("var mySonifications = ")
+f = open("../js/resources/index.js", "w")
+f.write("var index = ")
 f.close()
 
 json.dump(
@@ -89,9 +89,9 @@ json.dump(
                         "step": 1.0 
                     }, 
                     { 
-                        "name": "Duration", 
+                        "name": "Stereo Width", 
                         "value": 0.5, 
-                        "min": 0.25, 
+                        "min": 0.01, 
                         "max": 1.0, 
                         "step": 0.01 
                     },
@@ -133,8 +133,9 @@ json.dump(
                 ]
             },
             {
-                "type":"High-level Feature Sonification",
-                "formatted_name": "high-level-features-sonification",
+                "type":"Example Sonification",
+                "formatted_name": "example-sonification",
+                "processor": "js/audioProcessors/ExampleSonification.js",
                 "init_params": [
                     { 
                         "name": "Volume",
@@ -162,9 +163,9 @@ json.dump(
         ]
     }
 ]
-, open("../js/resources/mySonifications.js", "a")
+, open("../js/resources/index.js", "a")
 )
 
-f = open("../js/resources/mySonifications.js", "a")
-f.write("; export default mySonifications;")
+f = open("../js/resources/index.js", "a")
+f.write("; export default index;")
 f.close()

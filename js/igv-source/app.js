@@ -45,7 +45,7 @@ import GtexUtils from "./gtexUtils.js"
 import version from "./version.js"
 import {createCircularViewResizeModal} from "./circularViewResizeModal.js"
 //EDITED:
-import { Sonification } from "../sonification.js";
+import { SonicIGV } from "../SonicIGV.js";
 
 $(document).ready(async () => main(document.getElementById('igv-app-container'), igvwebConfig))
 
@@ -115,7 +115,7 @@ async function main(container, config) {
     //EDITED: Add the browser to the window variables
     window.browser = browser
 
-    Globals.sonifier = new Sonification(browser)
+    Globals.SonicIGV = new SonicIGV(browser)
 
     if (browser) {
         Globals.browser = browser

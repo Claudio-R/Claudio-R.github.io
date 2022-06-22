@@ -429,13 +429,21 @@ label.dropdown-item {
     align-items: center;
     box-sizing: border-box;
     width: 100%;
-    /* margin-top: 10px; */
     margin-right: 10px;
     padding-top: 6px;
 
 }
 
 .sonification-top-container {
+    display: flex;
+    flex-flow: column;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.sonification-row {
     display: flex;
     flex-flow: row;
     flex-wrap: nowrap;
@@ -448,8 +456,6 @@ label.dropdown-item {
     display: flex;
     flex-flow: row;
     flex-wrap: nowrap;
-    /* justify-content: space-between; */
-    /* align-items: center; */
     margin-top: 10px;
     height: 100%;
     width: 100%;
@@ -458,7 +464,7 @@ label.dropdown-item {
 .sonification-left-container {
     display: flex;
     flex-flow: column;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: space-between;
     /* align-items: center; */
     height: 100%;
