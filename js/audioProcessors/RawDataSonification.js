@@ -157,8 +157,8 @@ class RawDataSonification {
                         
                         /** Use an amplitude compensation mechanism */
                         // gainNode.gain.value = Math.pow((root / frequency), 0.3333);
-                        /** modified empirically */
-                        let gain = gain0 * 0.01 * frequency * a_weighting(frequency);
+                        /** this is similar to what Supercollider does in AmpCompA */
+                        let gain = gain0 * 0.1 * a_weighting(frequency);
                         gainNode.gain.value = gain;
 
                         /** Set panning */
