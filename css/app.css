@@ -468,7 +468,7 @@ label.dropdown-item {
     justify-content: space-between;
     /* align-items: center; */
     overflow-y: auto;
-    height: 600px;
+    height: 500px;
     width: 50%;
 }
 
@@ -480,6 +480,7 @@ label.dropdown-item {
     /* align-items: center; */
     /* height: fit-content; */
     width: 50%;
+    height: 500px;
 }
 
 .signal-box {
@@ -581,7 +582,7 @@ label.dropdown-item {
     /* align-items: center; */
     /* justify-content: space-around; */
     width: 100%;
-    height: 600px;
+    height: 100%;
     padding: 4px;
     background-color: #333333;
 }
@@ -606,4 +607,5 @@ label.dropdown-item {
     padding-top: 10px;
     padding: 5%;
     /* align-items: flex-end; */
+    overflow-y: auto;
 }
