@@ -24,8 +24,8 @@ export class SonicIGV {
     init() {
         const sonicIGV = document.createElement("div");
         sonicIGV.classList.add("sonicIGV-container");
-        const navBar = document.querySelector("nav");
-        navBar.after(sonicIGV);
+        document.querySelector("nav").after(sonicIGV);
+
         const igvMain = document.querySelector("#igv-main");
         igvMain.style.width = "60%";
         sonicIGV.appendChild(igvMain);
@@ -37,7 +37,10 @@ export class SonicIGV {
         sonicIGV.appendChild(sonification_column);
         
         sonicIGV.addEventListener('change', (e) => {
-            /** BUG: This should also take into account selection made through the "all" canvas */
+            /** 
+             * BUG: This should also take into account selection made through the "all" canvas
+             * also, setTimeout sometimes fails and the thread is locked
+             */
             if(e.target.getAttribute("name") === "chromosome-select-widget") {
                 /** wait a few milliseconds to retrieve the correct chromosome */
                 new Promise(resolve => setTimeout(resolve, 250)).then(() => {
@@ -91,7 +94,7 @@ export class SonicIGV {
                     name: signal["name"],
                     autoHeight: true,
                     color: colors[i],
-                    displayMode: "COLLAPSED",
+                    displayMode: "EXPANDED",
                 })
             }
             resolve()
@@ -146,9 +149,14 @@ export class SonicIGV {
             let sonification_button = document.createElement("button");
             sonification_button.classList.add("sonification-button");
             sonification_button.innerHTML = this.sonifications[i]["type"];
-            sonification_button.setAttribute("id", `${this.signals[i]["formatted_name"]}-sonification-button`);
+            sonification_button.setAttribute("id", `${this.sonifications[i]["formatted_name"]}-sonification-button`);
+            sonification_button.classList.add("signal-button-selected")
             sonification_button.onclick = (e) => {
-                e.target.classList.toggle("sonification-button-selected");
+                var formatted_name = e.target.getAttribute("id").slice(0, -20);
+                console.log(formatted_name)
+                var module = document.querySelector(`#${formatted_name}-module`)
+                module.classList.toggle("notvisible")
+                e.target.classList.toggle("signal-button-selected")
             }
             column.appendChild(sonification_button);
         }
@@ -164,84 +172,88 @@ export class SonicIGV {
 
         // LEFT CONTAINER CONTAINS THE SONIFICATION MODULES
         for(let sonification of this.sonifications) {
-
-            var type = sonification["type"]
-            var formatted_name = sonification["formatted_name"];
-
-            var sonification_module = document.createElement("div")
-            sonification_module.classList.add("sonification-module")
-            sonification_module.setAttribute("id", `${formatted_name}-module`)
-            leftContainer.appendChild(sonification_module);
-
-            var button_container = document.createElement("div");
-            button_container.classList.add("button-container");
-            sonification_module.appendChild(button_container);
-            
-            var btn = document.createElement("button")
-            btn.classList.add("sonification-button");
-            btn.setAttribute("id", `${formatted_name}-btn`);
-            if(formatted_name != "raw-data-sonification") {
-                btn.setAttribute("disabled", "disabled");
-            }
-            
-            btn.innerHTML = type;
-            btn.onclick = (e) => {
-                var selected_signals_names = [];
-                for(var i = 0; i < this.signals.length; i++) {
-                    var signal_button = document.getElementById(`${this.signals[i]["name"]}-signal-button`);
-                    if(signal_button.classList.contains("signal-button-selected")) {
-                        selected_signals_names.push(this.signals[i]["name"]);
-                    }
-                }
-
-                var selected_btn = e.target
-                var sonificationConfig = {
-                    "formatted_name": selected_btn.id.slice(0, -4),
-                    "signals_names": selected_signals_names,
-                    "locus": [this.browser.referenceFrameList[0]['start'], this.browser.referenceFrameList[0]['end']],
-                    "params": sonification["init_params"],
-                }
-                this.configureSonification(sonificationConfig)
-            };
-
-            button_container.appendChild(btn);
-
-            var play_btn = document.createElement("button")
-            play_btn.classList.add("sonification-button");
-            play_btn.setAttribute("id", `${formatted_name}-play-btn`);
-            play_btn.innerHTML = "Play";
-            if(formatted_name != "raw-data-sonification") {
-                play_btn.setAttribute("disabled", "disabled");
-            }
-            play_btn.onclick = (e) => {
-                var sonification_name = e.target.id.slice(0, -9);
-                this.playSonification(sonification_name)
-            };
-            
-            button_container.appendChild(play_btn);
-
-            var stop_btn = document.createElement("button")
-            stop_btn.classList.add("sonification-button");
-            stop_btn.setAttribute("id", `${formatted_name}-stop-btn`);
-            stop_btn.innerHTML = "Stop";
-            if(formatted_name != "raw-data-sonification") {
-                stop_btn.setAttribute("disabled", "disabled");
-            }
-            stop_btn.onclick = (e) => {
-                var sonification_name = e.target.id.slice(0, -9);
-                this.stopSonification(sonification_name)
-            };
-            
-            button_container.appendChild(stop_btn);
-            
-            var sonification_controller = document.createElement("div")
-            sonification_controller.classList.add("sonification-controller")
-            sonification_controller.setAttribute("id", `${formatted_name}-controller`)
-            this.createController(sonification_controller, formatted_name, sonification["init_params"])
-            sonification_module.appendChild(sonification_controller)
-
+            this.createModule(sonification["formatted_name"])
         }
+        //for(let sonification of this.sonifications) {
 
+        //     var type = sonification["type"]
+        //     var formatted_name = sonification["formatted_name"];
+
+        //     var sonification_module = document.createElement("div")
+        //     sonification_module.classList.add("sonification-module")
+        //     sonification_module.setAttribute("id", `${formatted_name}-module`)
+        //     leftContainer.appendChild(sonification_module);
+
+        //     var button_container = document.createElement("div");
+        //     button_container.classList.add("button-container");
+        //     sonification_module.appendChild(button_container);
+            
+        //     var btn = document.createElement("button")
+        //     btn.classList.add("sonification-button");
+        //     btn.setAttribute("id", `${formatted_name}-btn`);
+        //     if(formatted_name != "raw-data-sonification") {
+        //         btn.setAttribute("disabled", "disabled");
+        //     }
+            
+        //     btn.innerHTML = type;
+        //     btn.onclick = (e) => {
+        //         var selected_signals_names = [];
+        //         for(var i = 0; i < this.signals.length; i++) {
+        //             var signal_button = document.getElementById(`${this.signals[i]["name"]}-signal-button`);
+        //             if(signal_button.classList.contains("signal-button-selected")) {
+        //                 selected_signals_names.push(this.signals[i]["name"]);
+        //             }
+        //         }
+
+        //         var selected_btn = e.target
+        //         var sonificationConfig = {
+        //             "formatted_name": selected_btn.id.slice(0, -4),
+        //             "signals_names": selected_signals_names,
+        //             "locus": [this.browser.referenceFrameList[0]['start'], this.browser.referenceFrameList[0]['end']],
+        //             "params": sonification["init_params"],
+        //         }
+        //         this.configureSonification(sonificationConfig)
+        //     };
+
+        //     button_container.appendChild(btn);
+
+        //     var play_btn = document.createElement("button")
+        //     play_btn.classList.add("sonification-button");
+        //     play_btn.setAttribute("id", `${formatted_name}-play-btn`);
+        //     play_btn.innerHTML = "Play";
+        //     if(formatted_name != "raw-data-sonification") {
+        //         play_btn.setAttribute("disabled", "disabled");
+        //     }
+        //     play_btn.onclick = (e) => {
+        //         var sonification_name = e.target.id.slice(0, -9);
+        //         this.playSonification(sonification_name)
+        //     };
+            
+        //     button_container.appendChild(play_btn);
+
+        //     var stop_btn = document.createElement("button")
+        //     stop_btn.classList.add("sonification-button");
+        //     stop_btn.setAttribute("id", `${formatted_name}-stop-btn`);
+        //     stop_btn.innerHTML = "Stop";
+        //     if(formatted_name != "raw-data-sonification") {
+        //         stop_btn.setAttribute("disabled", "disabled");
+        //     }
+        //     stop_btn.onclick = (e) => {
+        //         var sonification_name = e.target.id.slice(0, -9);
+        //         this.stopSonification(sonification_name)
+        //     };
+            
+        //     button_container.appendChild(stop_btn);
+            
+        //     var sonification_controller = document.createElement("div")
+        //     sonification_controller.classList.add("sonification-controller")
+        //     sonification_controller.setAttribute("id", `${formatted_name}-controller`)
+        //     this.createController(sonification_controller, formatted_name, sonification["init_params"])
+        //     sonification_module.appendChild(sonification_controller)
+
+        // }
+
+        
         // RIGHT CONTAINER CONTAINS THE OUTPUT WINDOW
         var outputWindow = document.createElement("div");
         outputWindow.classList.add("output-window");
@@ -260,6 +272,94 @@ export class SonicIGV {
         this.outputWindow.innerHTML = "SYSTEM BOOTED<br/>SonicIGV is ready to sonify!";
 
     }
+
+    createModule(formatted_name) {
+
+        var container = document.querySelector(".sonification-left-container");
+
+        var sonification;
+        for(let sonification_ of this.sonifications) {
+            if(sonification_["formatted_name"] == formatted_name){
+                sonification = sonification_;
+                break;
+            }
+        }
+
+        var sonification_module = document.createElement("div")
+        sonification_module.classList.add("sonification-module")
+        sonification_module.setAttribute("id", `${formatted_name}-module`)
+        container.appendChild(sonification_module);
+    
+        var button_container = document.createElement("div");
+        button_container.classList.add("button-container");
+        sonification_module.appendChild(button_container);
+        
+        var btn = document.createElement("button")
+        btn.classList.add("sonification-button");
+        btn.setAttribute("id", `${formatted_name}-btn`);
+        if(formatted_name != "raw-data-sonification") {
+            btn.setAttribute("disabled", "disabled");
+        }
+        
+        btn.innerHTML = sonification["type"];
+        btn.onclick = (e) => {
+            var selected_signals_names = [];
+            for(var i = 0; i < this.signals.length; i++) {
+                var signal_button = document.getElementById(`${this.signals[i]["name"]}-signal-button`);
+                if(signal_button.classList.contains("signal-button-selected")) {
+                    selected_signals_names.push(this.signals[i]["name"]);
+                }
+            }
+
+            var selected_btn = e.target
+            var sonificationConfig = {
+                "formatted_name": selected_btn.id.slice(0, -4),
+                "signals_names": selected_signals_names,
+                "locus": [this.browser.referenceFrameList[0]['start'], this.browser.referenceFrameList[0]['end']],
+                "params": sonification["init_params"],
+            }
+            this.configureSonification(sonificationConfig)
+        };
+
+        button_container.appendChild(btn);
+
+        var play_btn = document.createElement("button")
+        play_btn.classList.add("sonification-button");
+        play_btn.setAttribute("id", `${formatted_name}-play-btn`);
+        play_btn.innerHTML = "Play";
+        if(formatted_name != "raw-data-sonification") {
+            play_btn.setAttribute("disabled", "disabled");
+        }
+        play_btn.onclick = (e) => {
+            var sonification_name = e.target.id.slice(0, -9);
+            this.playSonification(sonification_name)
+        };
+        
+        button_container.appendChild(play_btn);
+
+        var stop_btn = document.createElement("button")
+        stop_btn.classList.add("sonification-button");
+        stop_btn.setAttribute("id", `${formatted_name}-stop-btn`);
+        stop_btn.innerHTML = "Stop";
+        if(formatted_name != "raw-data-sonification") {
+            stop_btn.setAttribute("disabled", "disabled");
+        }
+        stop_btn.onclick = (e) => {
+            var sonification_name = e.target.id.slice(0, -9);
+            this.stopSonification(sonification_name)
+        };
+        
+        button_container.appendChild(stop_btn);
+        
+        var sonification_controller = document.createElement("div")
+        sonification_controller.classList.add("sonification-controller")
+        sonification_controller.setAttribute("id", `${formatted_name}-controller`)
+        this.createController(sonification_controller, formatted_name, sonification["init_params"])
+        sonification_module.appendChild(sonification_controller)
+
+        console.log(container)
+    }
+
 
     /**
      * This function creates the sliders used to interact with the sonification module
