@@ -157,7 +157,7 @@ class RawDataSonification {
                         
                         /** Use an amplitude compensation mechanism */
                         // gainNode.gain.value = Math.pow((root / frequency), 0.3333);
-                        let gain = gain0*a_weighting(frequency);
+                        let gain = gain0 * 0.1 * a_weighting(frequency);
                         gainNode.gain.value = gain;
 
                         /** Set panning */
@@ -170,7 +170,8 @@ class RawDataSonification {
                         panNode.connect(offlineCtx.destination);
                         //gainNode.connect(offlineCtx.destination);
 
-                        outputWindow.innerHTML += "<br/>Grain " + index + "<br/>Frequency: " + frequency;
+                        outputWindow.innerHTML += "<br/>### Grain " + index + " ###";
+                        outputWindow.innerHTML += "<br/>Frequency: " + frequency;
                         outputWindow.innerHTML += "<br/>Gain: " + gain.toFixed(2);
                         outputWindow.innerHTML += "<br/>Pan: " + pan_array[index].toFixed(2);
 
@@ -188,6 +189,7 @@ class RawDataSonification {
             }
 
             createGrain(0).then((singleChannelGrainBuffer) => {
+                this.outputWindow.innerHTML += "<br/>### Processing... ###";
                 resolve([singleChannelGrainBuffer, duration]);
             });
         });
@@ -332,7 +334,9 @@ class RawDataSonification {
             buffer = this.sonifiedSignals;
         }
         
-        const pan_array = this.createPanningArray(1, buffer.numberOfChannels);
+        const stereo_width = this.parameters["Stereo Width"];
+
+        const pan_array = this.createPanningArray(stereo_width);
         console.log(pan_array);
 
         for (let i = 0; i < buffer.numberOfChannels; i++) {
@@ -356,8 +360,6 @@ class RawDataSonification {
         }
 
         this.launchTimeCursor(buffer.duration)
-
-        this.outputWindow.innerHTML += "<br/>Sonification Completed!<br/>Press 'Play' to hear the result.";
     }
 
     /**

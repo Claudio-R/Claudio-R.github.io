@@ -89,6 +89,13 @@ json.dump(
                         "step": 1.0 
                     }, 
                     { 
+                        "name": "Detune", 
+                        "value": 0.0, 
+                        "min": 0.0, 
+                        "max": 0.20, 
+                        "step": 0.01 
+                    },
+                    { 
                         "name": "Stereo Width", 
                         "value": 0.5, 
                         "min": 0.01, 
@@ -103,7 +110,7 @@ json.dump(
                         "step": 0.001
                     },
                     {
-                        "name": "Release",
+                        "name": "Decay",
                         "value": 0.1,
                         "min": 0.01,
                         "max": 0.5,
@@ -117,19 +124,12 @@ json.dump(
                         "step": 0.001
                     },
                     {
-                        "name": "Decay",
+                        "name": "Release",
                         "value": 0.1,
                         "min": 0.01,
                         "max": 0.5,
                         "step": 0.001
                     },
-                    { 
-                        "name": "Detune", 
-                        "value": 0.0, 
-                        "min": 0.0, 
-                        "max": 0.20, 
-                        "step": 0.01 
-                    }
                 ]
             },
             {
