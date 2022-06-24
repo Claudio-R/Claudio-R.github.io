@@ -12,6 +12,8 @@ If you wish to know more about IGV and the people behind it, please visit the of
 ## How to run
 The application is available at the link https://claudio-r.github.io.
 
+__Beware!__ To correctly open the Sonification Module, move to "chr1" using the dropdown menu "all", in the left corner of the navbar. It may happen that moving from one chromosome to the other your browser gets stack. This is a bug in interfacing with IGV and will be fixed. Also, you should not use the canvas selector which opens up in the main page.
+
 If you wish to clone the repository, no build operation is required. 
 It is sufficient to move to the project directory and run the following code:
 > npm run install  
@@ -19,12 +21,19 @@ It is sufficient to move to the project directory and run the following code:
 
 An online server will be created at localhost:8000 to use the application. Since the whole sonification system is implemented using the __WebAudio API__, I suggest using __Chrome__ to get the best results from your sonification.
 
-__Beware__ that because of a bug that I have not been able to solve yet, you should not use the canvas selector to switch from one chromosome to the other, rather use the dropdown menu in the toolbar. 
-
 ## Contribution
 SonicIGV has been built to be easily expandable and scalable. Contribution are really welcome!
 
 The entry point is the __index.html__ file in the first level of folder. It includes as a script the __app.js__ file in _js/igv_source_ folder, which in turns calls the __SonicIGV.js__ script. 
+
+The main code is contained in the _js_ folder. It contains the IGV source code, and the code related to SonicIGV, as well as the resources it uses.
+
+In the _python_ folder there are some python scripts used for parsing the data.
+
+Note that the data which do not relate to the first chromosome are not provided. Please contact me or Luca Nanni if you need them.
+Also, the project folders contains a lot of files needed by IGV and that should not be deleted or modified.
+
+### Adding a module
 
 To add a new sonification module, implement it as a new class with the following characteristics:
 
