@@ -5,7 +5,7 @@ Claudio Rapisarda, M. Sci. Music and Acoustic Engineering, Politecnico di Milano
 This work was supported by Professor Bernardini Alberto, Professor Professor Ceri Stefano, Postdoc Nanni Luca and Professor Sarti Augusto.
 
 ## Description
-SonicIGV is a long-term, open-minded project with the aim to create a complete tool able to provide strong analysis and sonification tools of genomic data together with the visualization tools provided by the IGV platform, licensed by MIT.
+SonicIGV is a long-term, open-minded project with the aim to create a platform able to provide strong analysis and sonification tools of genomic data together with the visualization tools provided by the IGV platform, licensed by MIT.
 
 If you wish to know more about IGV and the people behind it, please visit the official website at the link https://igv.org/.
 
@@ -13,11 +13,11 @@ If you wish to know more about IGV and the people behind it, please visit the of
 The application is available at the link https://claudio-r.github.io.
 
 If you wish to clone the repository, no build operation is required. 
-Is is sufficient to move to the project directory and run the following code:
+It is sufficient to move to the project directory and run the following code:
 > npm run install  
 > npx http-server -a localhost .
 
-An online server will be created at localhost:8000 to use the application. Since the whole sonification systems is implemented using the __WebAudio API__, I suggest to use __Chrome__ to get the best results from your sonification.
+An online server will be created at localhost:8000 to use the application. Since the whole sonification system is implemented using the __WebAudio API__, I suggest using __Chrome__ to get the best results from your sonification.
 
 __Beware__ that because of a bug that I have not been able to solve yet, you should not use the canvas selector to switch from one chromosome to the other, rather use the dropdown menu in the toolbar. 
 
