@@ -57,9 +57,7 @@ The __accuracy values__ for each question defined as the ratio between the avera
 The __custom scores__ are collected in column _AC_.
 The custom score is defined as:
 
-$$
-    Score = \frac{\sum_{i=1}^{N_s}c_i\left(\frac{a_{i,1}}{gt_1} + \frac{a_{i,2}}{gt_2}\right)}{2\sum_{i=1}^{N_s}c_i} 
-$$
+![CustomScore](img/customScore.png)
 
 Where $a_{i,1}$ and $a_{i,2}$ are the answers to question 1 and 2 by the subject $i$, while $c_i$ is the self-confidence reported by the same subject; $N_s$, instead, is the number of subjects.
 
