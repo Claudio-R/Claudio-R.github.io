@@ -1,7 +1,7 @@
 # Creata a JSON file with the data from the binary database for chr1 and another JSON file
 # containing a list of the available sonification procedures.
 
-# If you need the npy arrays in the /data/ folder contact me or Luca Nanni
+# If you need the numpy arrays in the /data/ folder contact me or Luca Nanni
 
 import numpy as np
 import json
@@ -18,6 +18,10 @@ import json
 # f = open("../js/resources/epigenomes.js", "w")
 # f.write("var epigenomes = ")
 # f.close()
+
+# # "url_track" is the url to the track to be loaded by the IGV browser
+# # "name" is the name of the signal
+# # "binary_data" is the binary signal to be used in the "RAW DATA SONIFICATION" procedure  
 
 # json.dump(
 #     [
