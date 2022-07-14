@@ -1,6 +1,10 @@
 # SonicIGV - An IGV based Sonification Platform
+
+![SOnicIGV](img\sonicigv.png)
+
 ### Author
 Claudio Rapisarda, M. Sci. Music and Acoustic Engineering, Politecnico di Milano.
+
 ### Aknowledgement
 This work was supported by Professor Bernardini Alberto, Professor Professor Ceri Stefano, Postdoc Nanni Luca and Professor Sarti Augusto.
 
