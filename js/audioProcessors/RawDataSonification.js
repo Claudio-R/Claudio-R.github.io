@@ -75,7 +75,7 @@ class RawDataSonification {
                 pan_array.push(pan);
             }
         }
-        console.log(pan_array);
+        // console.log(pan_array);
         return pan_array;
     }
     
@@ -152,7 +152,8 @@ class RawDataSonification {
                         /** Create the envelope */
                         envNode.gain.setValueAtTime(0, startTime);
                         envNode.gain.setTargetAtTime(1, startTime, attack);
-                        envNode.gain.setTargetAtTime(sustain, startTime + attack, decay);
+                        // halves the power during decay time
+                        envNode.gain.setTargetAtTime(1/Math.sqrt(2), startTime + attack, decay);
                         envNode.gain.setTargetAtTime(0, startTime + attack + decay + sustain, release);
                         
                         /** Use an amplitude compensation mechanism */
@@ -237,52 +238,55 @@ class RawDataSonification {
     /**
      * Process the input signals using the grains synthesized before.
      * @param {*} signals is an AudioBuffer containing the signals to be processed, actually this could also be a 2D array.
-     * @param {*} grains is an AudioBuffer containing the grains to use for the processing.
+     * @param {*} grains is a multichannel AudioBuffer containing a grain in each channel to use for the processing.
      */
     process(signals, grains) {
         return new Promise((resolve) => {
 
-            /** The overall sonification duration is fixed, but could be set by the user in a master control */
-            const sonification_duration = 15;
+            /** The minimum sonification duration is fixed, but could be set by the user in a master control */
+            const minimum_duration = 15;
 
             const sample_rate = grains.sampleRate;
-            const minimum_num_samples = sonification_duration * sample_rate;
+            const minimum_num_samples = minimum_duration * sample_rate;
             
-            const signals_length = signals.length;
+            const N_in = signals.length;
             
             /** To allow for a proper playback, upsampling may be necessary */
-            let resampling_factor;
-            (minimum_num_samples > signals_length) ? resampling_factor = Math.round(minimum_num_samples / signals_length) : resampling_factor = 1;
+            let R;
+            (minimum_num_samples > N_in) ? R = Math.round(minimum_num_samples / N_in) : R = 1;
     
             /** Simply, consider the worst case that the last bit is a 1 */
-            const num_samples = (signals_length - 1) * resampling_factor + grains.length;
+            const num_samples = (N_in - 1) * R + grains.length;
             const num_channels = grains.numberOfChannels;
+
+            console.log(N_in, R, grains.length)
+            console.log(num_samples)
 
             /** Create the output audio buffer */
             const offlineCtx = new OfflineAudioContext(num_channels, num_samples, sample_rate);
             let outputBuffer = offlineCtx.createBuffer(num_channels, num_samples, sample_rate);
 
             /** Fill in the output buffer */
-            for(let channel_num = 0; channel_num < num_channels; channel_num++) {
+            for(let c = 0; c < num_channels; c++) {
                 
-                let signal = signals.getChannelData(channel_num);
-                let grain = grains.getChannelData(channel_num);
-                let output = outputBuffer.getChannelData(channel_num);
+                let signal = signals.getChannelData(c);
+                let grain = grains.getChannelData(c);
+                let output = outputBuffer.getChannelData(c);
                 
-                for(let j = 0; j < signals_length; j++) {
+                for(let n = 0; n < N_in; n++) {
                     /** Add a grain each time the signal gives 1 */
-                    if(signal[j] == 1) {
-                        grain.forEach((element, index) => {
-                            output[j * resampling_factor + index] += element;
+                    if(signal[n] == 1) {
+                        grain.forEach((element, idx) => {
+                            output[n * R + idx] += element;
                         });
                     } else {
-                        for(let k = 0; k < resampling_factor; k++) {
-                            output[j * resampling_factor + k] += 0;
+                        for(let k = 0; k < R; k++) {
+                            output[n * R + k] += 0;
                         }
                     }
                 }  
                 
-                /** Normalize the output to avoid distortio due to too many overlapping grains */
+                /** Normalize the output to avoid distortion due to too many overlapping grains */
                 let maxValue = 1;
                 output.forEach((element) => {
                     if(element > maxValue) {
@@ -307,7 +311,7 @@ class RawDataSonification {
      */
     listen(audioBuffer) {
         return new Promise((resolve) => {
-            console.log(audioBuffer);
+            // console.log(audioBuffer);
             var audioContext = new AudioContext();
             var source = audioContext.createBufferSource();
             source.buffer = audioBuffer;
@@ -322,8 +326,9 @@ class RawDataSonification {
      * It takes any multiple-channel audio buffer as input and applies the correct panning.
      * @param {*} buffer is the input audio buffer to play.
      */
-    play(buffer) {
+    play() {
         
+        /** Restart the sonification if already playing */
         if(this.state === "playing") {
             this.stop();
         }
@@ -331,15 +336,12 @@ class RawDataSonification {
 
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)()
         
-        if(!buffer) { 
-            buffer = this.sonifiedSignals;
-        }
-        
-        const stereo_width = this.parameters["Stereo Width"];
+        let buffer = this.sonifiedSignals;
+        console.log(buffer)
 
-        const pan_array = this.createPanningArray(stereo_width);
-        console.log(pan_array);
+        const pan_array = this.createPanningArray(this.parameters["Stereo Width"]);
 
+        /** For a proper playback, associate a buffer source to each channel */
         for (let i = 0; i < buffer.numberOfChannels; i++) {
             
             let singleChannelBuffer = this.audioCtx.createBuffer(1, buffer.length, this.audioCtx.sampleRate);
@@ -349,32 +351,28 @@ class RawDataSonification {
             source.buffer = singleChannelBuffer;
             let gainNode = this.audioCtx.createGain();
             gainNode.gain.value = this.parameters.Gain;
-            
             let pannerNode = this.audioCtx.createStereoPanner();
             pannerNode.pan.value = pan_array[i];
-            
             source.connect(pannerNode);
             pannerNode.connect(this.audioCtx.destination);
-            
+
             source.start(0);
-            source.stop(0 + buffer.duration);
+            source.stop(0 + buffer.duration + 1);
         }
 
-        this.launchTimeCursor(buffer.duration)
+        this.launchTimeCursor(buffer.duration + 1)
     }
 
     /**
-     * This function is used to instantiate a time cursor.
+     * This function is used to instantiate a time cursor. It is not perfectly synchronized
      * It would be better to move this to a separate class.
      * @param {*} bufferDuration is the duration of the buffer to be played, used to define the cursor speed.
      */
     launchTimeCursor(bufferDuration) {
 
-        const duration = bufferDuration - this.grainDuration;
-
         var cursor_samples = 10000
-        var cursor_sampleRate = cursor_samples/duration
-        var cursor_samplingPeriod = 1/cursor_sampleRate
+        var cursor_refreshRate = cursor_samples/bufferDuration
+        var cursor_refreshPeriod = 1/cursor_refreshRate
 
         var igv_column = document.querySelector(".igv-column")
         var timeCursor = document.createElement("div")
@@ -387,7 +385,7 @@ class RawDataSonification {
         function moveCursor(i) {
             setTimeout(() => {
                 timeCursor.style.left = `${i/cursor_samples * 100}%`
-            }, i * cursor_samplingPeriod * 1000)
+            }, i * cursor_refreshPeriod * 1000)
         }
 
         for (var i = 0; i < cursor_samples; i++) {
